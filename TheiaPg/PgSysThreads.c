@@ -372,7 +372,7 @@ VOID InitSearchPgSysThread(VOID)
 
     PUCHAR pCurrentThreadObj = NULL;
 
-    USHORT CouterInsertedAPCs = 0I16;
+    USHORT CouterInsertedAPCs = 0UI16;
 
     if (__readcr8() > DISPATCH_LEVEL)
     {
@@ -381,8 +381,8 @@ VOID InitSearchPgSysThread(VOID)
         DieDispatchIntrnlError(ERROR_INIT_SEARCH_PG_SYS_THREAD);
     }
 
-             /* Skip IdleThread */
-    for (ULONG32 TID = 4UI32; TID < 0xFFFF; TID += 4UI32)
+               /* Skip IdleThread */
+    for (ULONG32 TID = 4UI32; TID < 0xFFFFUI32; TID += 4UI32)
     {
         if (NT_SUCCESS(g_pTheiaCtx->pPsLookupThreadByThreadId((HANDLE)TID, &pCurrentThreadObj)))
         {

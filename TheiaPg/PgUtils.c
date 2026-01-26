@@ -65,7 +65,7 @@ VOID SearchKdpcInPgPrcbFields(VOID)
 
 	for (UCHAR i = 0UI8, j = 0UI8; i < 8; i++, j += 8)
 	{
-		pCurrentCheckKdpc = __readgsqword(GsOffsetHalReserved + j);
+		pCurrentCheckKdpc = (PKDPC)__readgsqword(GsOffsetHalReserved + j);
 
 		if ((g_pTheiaCtx->pMmIsAddressValid(pCurrentCheckKdpc)))
 		{
@@ -95,7 +95,7 @@ VOID SearchKdpcInPgPrcbFields(VOID)
 		}
 	}
 
-	pCurrentCheckKdpc = __readgsqword(GsOffsetAcpiReserved);
+	pCurrentCheckKdpc = (PKDPC)__readgsqword(GsOffsetAcpiReserved);
 
 	if ((g_pTheiaCtx->pMmIsAddressValid(pCurrentCheckKdpc)))
 	{

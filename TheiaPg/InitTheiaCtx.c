@@ -5,7 +5,7 @@
 /*++
 * Routine: InitTheiaMetaDataBlock
 *
-* MaxIRQL: DISPATCH_LEVEL (If IRQL > DISPATCH_LEVEL then TheiaMetaDataBlock must be NonPaged)
+* MaxIRQL: Any level (If IRQL > DISPATCH_LEVEL then TheiaMetaDataBlock must be NonPaged)
 * 
 * Public/Private: Public
 *

@@ -297,6 +297,19 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
         goto ExitJmp;
     }
   
+    if (*((PVOID*)((PUCHAR)pEprocessTrgtImg + (IsLocalCtx ? pLocalTMDB->EPROCESS_Peb_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.EPROCESS_Peb_OFFSET))))
+    {
+        AccessMode = UserMode;
+
+        Cr3User = *((PULONG64)((PUCHAR)pEprocessTrgtImg + (IsLocalCtx ? pLocalTMDB->KPROCESS_DirectoryTableBase_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.KPROCESS_DirectoryTableBase_OFFSET)));
+
+        _disable();
+
+        __writecr3(Cr3User);
+
+        HrdClacx64();
+    }
+    
     if (pModuleName)
     {
         if (!pModuleName || !((__readcr8() <= DISPATCH_LEVEL) ?
@@ -317,7 +330,7 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
             goto ExitJmp;
         }
 
-        if (!(*((PVOID*)((PUCHAR)pEprocessTrgtImg + (IsLocalCtx ? pLocalTMDB->EPROCESS_Peb_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.EPROCESS_Peb_OFFSET)))))
+        if (!AccessMode)
         {
             pDummyLdr = PsLoadedModuleList;
 
@@ -325,16 +338,6 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
         }
         else
         {
-            _disable();
-
-            AccessMode = UserMode;
-
-            HrdClacx64();
-
-            Cr3User = *((PULONG64)((PUCHAR)pEprocessTrgtImg + (IsLocalCtx ? pLocalTMDB->KPROCESS_DirectoryTableBase_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.KPROCESS_DirectoryTableBase_OFFSET)));
-
-            __writecr3(Cr3User);
-
             pDummyLdr = *(PVOID*)((PUCHAR)(*(PVOID*)((PUCHAR)(*(PVOID*)((PUCHAR)pEprocessTrgtImg + 
             (IsLocalCtx ? pLocalTMDB->EPROCESS_Peb_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.EPROCESS_Peb_OFFSET))) + (IsLocalCtx ? pLocalTMDB->PEB_Ldr_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.PEB_Ldr_OFFSET))) +
             (IsLocalCtx ? pLocalTMDB->PEB_LDR_DATA_InLoadOrderModuleList_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.PEB_LDR_DATA_InLoadOrderModuleList_OFFSET));
@@ -382,7 +385,7 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
     }
     else
     {
-        if (!(*((PVOID*)((PUCHAR)pEprocessTrgtImg + (IsLocalCtx ? pLocalTMDB->EPROCESS_Peb_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.EPROCESS_Peb_OFFSET)))))
+        if (!AccessMode)
         {
             pBaseAddrModule = ((PKLDR_DATA_TABLE_ENTRY)(*((PVOID*)PsLoadedModuleList)))->DllBase;
 
@@ -393,16 +396,6 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
         }
         else
         {
-            _disable();
-
-            AccessMode = UserMode;
-
-            HrdClacx64();
-
-            Cr3User = *((PULONG64)((PUCHAR)pEprocessTrgtImg + (IsLocalCtx ? pLocalTMDB->KPROCESS_DirectoryTableBase_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.KPROCESS_DirectoryTableBase_OFFSET)));
-
-            __writecr3(Cr3User);
-
             pBaseAddrModule = *((PVOID*)((PUCHAR)(*((PVOID*)((PUCHAR)(*((PVOID*)((PUCHAR)*((PVOID*)((PUCHAR)pEprocessTrgtImg +
             (IsLocalCtx ? pLocalTMDB->EPROCESS_Peb_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.EPROCESS_Peb_OFFSET))) +
             (IsLocalCtx ? pLocalTMDB->PEB_Ldr_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.PEB_Ldr_OFFSET)))) +
