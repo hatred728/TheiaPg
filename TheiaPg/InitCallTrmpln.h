@@ -8,7 +8,7 @@ typedef struct _ICT_DATA_RELATED
     PVOID   pBasePatch;
     PVOID   pHandlerHook;
     ULONG64 LengthHandler;
-    UCHAR   LengthAllignment;
+    UCHAR   LengthAlignment;
 
 }ICT_DATA_RELATED, * PICT_DATA_RELATED;
 

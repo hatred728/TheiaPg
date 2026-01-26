@@ -1,10 +1,10 @@
 #include "LinkHeader.h"
 
-#define ALLIGNMENT_ICT_KIEXECUTEALLDPCS 2UI8
+#define ALIGNMENT_ICT_KIEXECUTEALLDPCS 2UI8
 
-#define ALLIGNMENT_ICT_KIRETIREDPCLIST  0UI8
+#define ALIGNMENT_ICT_KIRETIREDPCLIST  0UI8
 
-#define ALLIGNMENT_ICT_EXALLOCATEPOOL2  0UI8
+#define ALIGNMENT_ICT_EXALLOCATEPOOL2  0UI8
 
 CONST UCHAR THEIA_ENTRY_DATA_KIEXECUTEALLDPCS_SUBSIG[] =
 {
@@ -191,7 +191,7 @@ VOID TheiaEntry(VOID)
     
     RelatedDataICT.pHandlerHook = &HandlerVsrKiExecuteAllDpcs;
     RelatedDataICT.LengthHandler = sizeof HandlerVsrKiExecuteAllDpcs;
-    RelatedDataICT.LengthAllignment = ALLIGNMENT_ICT_KIEXECUTEALLDPCS;
+    RelatedDataICT.LengthAlignment = ALIGNMENT_ICT_KIEXECUTEALLDPCS;
     
     HkInitCallTrmpln(&RelatedDataICT);
     
@@ -209,7 +209,7 @@ VOID TheiaEntry(VOID)
     
     RelatedDataICT.pHandlerHook = &HandlerVsrKiRetireDpcList;
     RelatedDataICT.LengthHandler = sizeof HandlerVsrKiRetireDpcList;
-    RelatedDataICT.LengthAllignment = ALLIGNMENT_ICT_KIRETIREDPCLIST;
+    RelatedDataICT.LengthAlignment = ALIGNMENT_ICT_KIRETIREDPCLIST;
     
     HkInitCallTrmpln(&RelatedDataICT);
     
@@ -227,7 +227,7 @@ VOID TheiaEntry(VOID)
     
     RelatedDataICT.pHandlerHook = &HandlerVsrExAllocatePool2;
     RelatedDataICT.LengthHandler = sizeof HandlerVsrExAllocatePool2;
-    RelatedDataICT.LengthAllignment = ALLIGNMENT_ICT_EXALLOCATEPOOL2;
+    RelatedDataICT.LengthAlignment = ALIGNMENT_ICT_EXALLOCATEPOOL2;
     
     HkInitCallTrmpln(&RelatedDataICT);
     
@@ -249,7 +249,7 @@ VOID TheiaEntry(VOID)
                 RelatedDataICT.pBasePatch = ((PUCHAR)g_pTheiaCtx->pKiCustomRecurseRoutineX + 4);
                 RelatedDataICT.pHandlerHook = &HandlerVsrKiCustomRecurseRoutineX;
                 RelatedDataICT.LengthHandler = sizeof HandlerVsrKiCustomRecurseRoutineX;
-                RelatedDataICT.LengthAllignment = 0UI32;
+                RelatedDataICT.LengthAlignment = 0UI32;
     
                 pCurrentRecurseRoutine = g_pTheiaCtx->pKiCustomRecurseRoutineX;
     

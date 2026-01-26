@@ -193,13 +193,13 @@ static VOID HkInitCallTrmplnIntrnl(IN OUT PICT_DATA_RELATED pRelatedDataICT)
     //
     HrdIndpnRWVMemory(&DataIndpnRWVMem);
 
-    if (pRelatedDataICT->LengthAllignment) 
+    if (pRelatedDataICT->LengthAlignment) 
     { 
         DataIndpnRWVMem.pVa = ((PUCHAR)pRelatedDataICT->pBasePatch + sizeof(CallTrmpln));
 
         DataIndpnRWVMem.pIoBuffer = &NopArea;
 
-        DataIndpnRWVMem.LengthRW = pRelatedDataICT->LengthAllignment;
+        DataIndpnRWVMem.LengthRW = pRelatedDataICT->LengthAlignment;
 
         HrdIndpnRWVMemory(&DataIndpnRWVMem);
     }
