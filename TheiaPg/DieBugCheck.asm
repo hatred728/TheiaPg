@@ -212,12 +212,6 @@ and eax, 0FFFFF7FFh
 mov ss,r12d
 wrmsr
 
-mov ss,r12d
-xor eax,eax
-
-mov ss,r12d
-mov cr3,rax
-
 DeadLockLoop:
 
 mov ss,r12d
