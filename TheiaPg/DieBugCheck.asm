@@ -8,6 +8,8 @@ EXTERN g_pDieIndirectCallBugCheck:QWORD
 
 EXTERN g_DieNtosHeadThreadList:QWORD
 
+EXTERN g_pTheiaCtx:QWORD
+
 
 _TEXT SEGMENT
 
@@ -156,8 +158,6 @@ int 3
 
 DeadLockRoutine:
 
-mov ss,eax
-
 mov ss,r12d
 xor eax,eax
 
@@ -186,6 +186,9 @@ mov ss,r12d
 xor r11d,r11d
 
 mov ss,r12d
+xor r13d,r13d
+
+mov ss,r12d
 xor r14d,r14d
 
 mov ss,r12d
@@ -210,15 +213,25 @@ mov ss,r12d
 wrmsr
 
 mov ss,r12d
-mov dword ptr [r13 + 752], 0 ; CPU, it's time to sleep.
+cmp qword ptr[g_pTheiaCtx], 0
 
 mov ss,r12d
-xor r13d,r13d
+jz short SkipSynchDeadOtherCores
+
+mov ss,r12d
+mov rax, qword ptr[g_pTheiaCtx]
+
+mov ss,r12d
+mov dword ptr [rax + 752], 0 ; CPU, it's time to sleep.
+
+SkipSynchDeadOtherCores:
+
+mov ss,r12d
+xor eax,eax
 
 DeadLockLoop:
 
 mov ss,r12d
-
 jmp short DeadLockLoop
 
 DieBugCheck ENDP
