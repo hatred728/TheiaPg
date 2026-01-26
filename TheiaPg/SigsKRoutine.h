@@ -1,0 +1,41 @@
+#pragma once
+
+#include "LinkHeader.h"
+
+extern CONST UCHAR _25h2_w11_KiExecuteAllDpcs_SIG[];
+extern CONST UCHAR _25h2_w11_KiExecuteAllDpcs_MASK[];
+
+extern CONST UCHAR _25h2_w11_KiRetireDpcList_SIG[];
+extern CONST UCHAR _25h2_w11_KiRetireDpcList_MASK[];
+							
+extern CONST UCHAR _25h2_w11_KiCustomRecurseRoutineX_SIG[];
+extern CONST UCHAR _25h2_w11_KiCustomRecurseRoutineX_MASK[];
+
+extern CONST UCHAR _25h2_w11_KiMcaDeferredRecoveryService_SIG[];
+extern CONST UCHAR _25h2_w11_KiMcaDeferredRecoveryService_MASK[];
+
+extern CONST UCHAR _25h2_w11_FsRtlUninitializeSmallMcb_SIG[];
+extern CONST UCHAR _25h2_w11_FsRtlUninitializeSmallMcb_MASK[];
+
+extern CONST UCHAR _25h2_w11_FsRtlTruncateSmallMcb_SIG[];
+extern CONST UCHAR _25h2_w11_FsRtlTruncateSmallMcb_MASK[];
+
+extern CONST UCHAR _25h2_w11_KiDecodeMcaFault_SIG[];
+extern CONST UCHAR _25h2_w11_KiDecodeMcaFault_MASK[];
+
+extern CONST UCHAR _25h2_w11_CcBcbProfiler_SIG[];
+extern CONST UCHAR _25h2_w11_CcBcbProfiler_MASK[];
+
+extern CONST UCHAR _25h2_w11_CcBcbProfiler2_SIG[];
+extern CONST UCHAR _25h2_w11_CcBcbProfiler2_MASK[];
+
+extern CONST UCHAR _25h2_w11_KiDispatchCallout_SIG[];
+extern CONST UCHAR _25h2_w11_KiDispatchCallout_MASK[];
+
+extern CONST UCHAR _25h2_w11_MmAllocateIndependentPagesEx_SIG[];
+extern CONST UCHAR _25h2_w11_MmAllocateIndependentPagesEx_MASK[];
+			
+extern CONST UCHAR _25h2_w11_MmFreeIndependentPages_SIG[];
+extern CONST UCHAR _25h2_w11_MmFreeIndependentPages_MASK[];
+
+

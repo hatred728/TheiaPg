@@ -1,0 +1,13 @@
+_TEXT SEGMENT
+
+HrdClacx64 PROC
+
+clac
+
+ret
+
+HrdClacx64 ENDP
+
+_TEXT ENDS
+
+END

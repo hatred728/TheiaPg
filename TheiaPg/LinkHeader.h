@@ -1,0 +1,24 @@
+#pragma once
+
+#include <ntifs.h>
+#include <ntddk.h>
+#include <intrin.h>
+#include <immintrin.h>
+#include "IA32.h"
+#include "CommonMacro.h"
+#include "CommonStructs.h"
+#include "InitTheiaCtx.h"
+#include "PgUtils.h"
+#include "GetIF.h"
+#include "Clacx64.h"
+#include "Stacx64.h"
+#include "SetSPx64.h"
+#include "PhysMem.h"
+#include "PgSysThreads.h"
+#include "VisorRoutines.h"
+#include "DispatchIntrnlError.h"
+#include "DieBugCheck.h"
+#include "InitCallTrmpln.h"
+#include "SigsKRoutine.h"
+#include "GVars.h"
+#include "Utils.h"
