@@ -186,9 +186,6 @@ mov ss,r12d
 xor r11d,r11d
 
 mov ss,r12d
-xor r13d,r13d
-
-mov ss,r12d
 xor r14d,r14d
 
 mov ss,r12d
@@ -211,6 +208,12 @@ and eax, 0FFFFF7FFh
 
 mov ss,r12d
 wrmsr
+
+mov ss,r12d
+mov dword ptr [r13 + 752], 0 ; CPU, it's time to sleep.
+
+mov ss,r12d
+xor r13d,r13d
 
 DeadLockLoop:
 

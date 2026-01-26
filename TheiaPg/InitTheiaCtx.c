@@ -697,7 +697,7 @@ VOID InitTheiaContext(VOID)
 *
 * @param NoParams
 *
-* Description: Checking current state gTheiaPg.
+* Description: Checking current state gTheiaCtx.
 --*/
 VOID CheckStatusTheiaCtx(VOID)
 {
@@ -705,19 +705,19 @@ VOID CheckStatusTheiaCtx(VOID)
 
     if (!g_pTheiaCtx)
     {
-        DbgLog("[TheiaPg <->] CheckStatusTheiaCtx: gTheiaContext is not allocate\n");
+        DbgLog("[TheiaPg <->] CheckStatusTheiaCtx: gTheiaCtx is not allocate\n");
 
         DieDispatchIntrnlError(ERROR_THEIA_CTX_NOT_INIT);
     }
     else if (g_pTheiaCtx->CompleteSignatureTC != COMPLETE_SIGNATURE_TC)
     {
-        DbgLog("[TheiaPg <->] CheckStatusTheiaCtx: gTheiaContext is not complete\n");
+        DbgLog("[TheiaPg <->] CheckStatusTheiaCtx: gTheiaCtx is not complete\n");
 
         DieDispatchIntrnlError(ERROR_THEIA_CTX_NOT_INIT);
     }
     else if (g_pTheiaCtx->TheiaMetaDataBlock.CompleteSignatureTMDB != COMPLETE_SIGNATURE_TMDB)
     {
-        DbgLog("[TheiaPg <->] CheckStatusTheiaCtx: gTheiaMetaDataBlock is not complete\n");
+        DbgLog("[TheiaPg <->] CheckStatusTheiaCtx: gTheiaCtx->TheiaMetaDataBlock is not complete\n");
 
         DieDispatchIntrnlError(ERROR_THEIA_CTX_NOT_INIT);
     }
