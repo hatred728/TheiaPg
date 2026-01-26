@@ -100,17 +100,13 @@ volatile PVOID g_pSpiiNonLargePage = NULL;
 *
 * Description: Routine for multifunctional analysis of the PE-Image windows.
 --*/
-PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_OBJS], IN ULONG32 FlagsExecute, IN PVOID pEprocessTrgtImg, IN PVOID pNameSection, IN PVOID pModuleName, IN PVOID pSig, IN PVOID pMaskSig)
+PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN ULONG32 FlagsExecute, IN PVOID pEprocessTrgtImg, IN PVOID pNameSection, IN PVOID pModuleName, IN PVOID pSig, IN PVOID pMaskSig)
 {  
     #define SPII_LOCAL_CONTEXT_MMISADDRESSVALID 0
 
     #define SPII_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID 1
 
-    #define SPII_LOCAL_CONTEXT_EXALLOCATEPOOL2 2
-
-    #define SPII_LOCAL_CONTEXT_EXFREEPOOLWITHTAG 3
-  
-    PVOID(__fastcall *SpiiCtx[4])(PVOID, ...) = { 0 }; ///< Routine is critical, so it should not depend on gTheiaCtx.
+    PVOID(__fastcall *SpiiCtx[2])(PVOID, ...) = { 0 }; ///< Routine is critical, so it should not depend on gTheiaCtx.
 
     PTHEIA_METADATA_BLOCK pLocalTMDB = g_pSpiiNonLargePage;
 
@@ -340,8 +336,8 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_OBJS], IN
             __writecr3(Cr3User);
 
             pDummyLdr = *(PVOID*)((PUCHAR)(*(PVOID*)((PUCHAR)(*(PVOID*)((PUCHAR)pEprocessTrgtImg + 
-                (IsLocalCtx ? pLocalTMDB->EPROCESS_Peb_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.EPROCESS_Peb_OFFSET))) + (IsLocalCtx ? pLocalTMDB->PEB_Ldr_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.PEB_Ldr_OFFSET))) +
-                (IsLocalCtx ? pLocalTMDB->PEB_LDR_DATA_InLoadOrderModuleList_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.PEB_LDR_DATA_InLoadOrderModuleList_OFFSET));
+            (IsLocalCtx ? pLocalTMDB->EPROCESS_Peb_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.EPROCESS_Peb_OFFSET))) + (IsLocalCtx ? pLocalTMDB->PEB_Ldr_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.PEB_Ldr_OFFSET))) +
+            (IsLocalCtx ? pLocalTMDB->PEB_LDR_DATA_InLoadOrderModuleList_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.PEB_LDR_DATA_InLoadOrderModuleList_OFFSET));
 
             pCurrentLdr = pDummyLdr;
         }
@@ -360,16 +356,21 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_OBJS], IN
 
             pBaseAddrModule = *(PVOID*)((PUCHAR)pCurrentLdr + (!AccessMode ? (IsLocalCtx ? pLocalTMDB->KLDR_DllBase_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.KLDR_DllBase_OFFSET) : (IsLocalCtx ? pLocalTMDB->LDR_DllBase_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.LDR_DllBase_OFFSET)));
          
-            if (!(FlagsExecute & SPII_GET_BASE_MODULE)) { goto NoRetBaseAddrModule; }
-
-            if (AccessMode)
-            {
-                __writecr3(Cr3Kernel);
-
-                _enable();
+            if (!(FlagsExecute & SPII_GET_BASE_MODULE))
+            { 
+                goto NoRetBaseAddrModule; 
             }
+            else
+            {
+                if (AccessMode)
+                {
+                    __writecr3(Cr3Kernel);
 
-            return pBaseAddrModule;
+                    _enable();
+                }
+
+                return pBaseAddrModule;
+            }
 
             continue0: continue;
 
@@ -392,6 +393,14 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_OBJS], IN
         }
         else
         {
+            _disable();
+
+            AccessMode = UserMode;
+
+            HrdClacx64();
+
+            Cr3User = *((PULONG64)((PUCHAR)pEprocessTrgtImg + (IsLocalCtx ? pLocalTMDB->KPROCESS_DirectoryTableBase_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.KPROCESS_DirectoryTableBase_OFFSET)));
+
             __writecr3(Cr3User);
 
             pBaseAddrModule = *((PVOID*)((PUCHAR)(*((PVOID*)((PUCHAR)(*((PVOID*)((PUCHAR)*((PVOID*)((PUCHAR)pEprocessTrgtImg +
@@ -436,20 +445,18 @@ NoRetBaseAddrModule:
         goto ExitJmp;
     }
 
-    for (ULONG32 i = 0UI32; i < NumberOfSectionsNT; ++i)
+    for (ULONG32 i = 0UI32; ; ++i, (((PUCHAR)pCurrentSectionHeader) += 0x28))
     {
-        for (ULONG32 j = 0UI32; ((PUCHAR)pNameSection)[j] != 0x00UI8; ++j)
+        for (ULONG32 j = 0UI32; ((PUCHAR)pNameSection)[j]; ++j)
         {
             if ((pCurrentSectionHeader->Name)[j] != ((PUCHAR)pNameSection)[j])
             {
-                if (j == (NumberOfSectionsNT - 1))
+                if (i == (NumberOfSectionsNT - 1))
                 {
                     DbgLog("[TheiaPg <->] _SearchPatternInImg: section %s not found\n", ((PUCHAR)pNameSection));
 
                     goto ExitJmp;
                 }
-
-                (((PUCHAR)pCurrentSectionHeader) += 0x28I8);
 
                 goto continue1;
             }
@@ -558,7 +565,7 @@ ExitJmp:
 *
 * Description: Routine for multifunctional analysis of the memory region.
 --*/
-PVOID _SearchPatternInRegion(IN ULONG64 OptionalData[SPIR_AMOUNT_OPTIONAL_OBJS], IN ULONG32 FlagsExecute, IN PUCHAR pRegionSearch, IN PUCHAR pSig, IN PUCHAR pMaskSig, IN PUCHAR pStopSig, IN ULONG32 LenStopSig)
+PVOID _SearchPatternInRegion(IN ULONG64 OptionalData[SPIR_AMOUNT_OPTIONAL_DATA], IN ULONG32 FlagsExecute, IN PUCHAR pRegionSearch, IN PUCHAR pSig, IN PUCHAR pMaskSig, IN PUCHAR pStopSig, IN ULONG32 LenStopSig)
 {
     #define SPIR_LOCAL_CONTEXT_MMISADDRESSVALID 0
 

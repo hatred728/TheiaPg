@@ -45,7 +45,7 @@ volatile VOID VsrKiExecuteAllDpcs(IN PINPUTCONTEXT_ICT pInputCtx)
 
     BOOLEAN LockCurrentQueue = FALSE;
 
-    while (TRUE)
+    for(; ;)
     {
         if (!FlagCurrentQueue && !LockCurrentQueue)
         {

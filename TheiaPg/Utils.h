@@ -10,7 +10,7 @@
                                                //
 #define SPII_SCAN_CALLER_INPUT_ADDRESS 0x04I32 //
                                                //
-#define SPII_AMOUNT_OPTIONAL_OBJS      0x02I32 //
+#define SPII_AMOUNT_OPTIONAL_DATA      0x02I32 //
                                                //
 // ============================================++
 
@@ -26,7 +26,7 @@
                                                //
 #define SPIR_SCAN_CALLER_INPUT_ADDRESS 0x02I32 //
                                                //
-#define SPIR_AMOUNT_OPTIONAL_OBJS      0x01I32 //
+#define SPIR_AMOUNT_OPTIONAL_DATA      0x01I32 //
                                                //
 // ============================================++
 
@@ -42,6 +42,6 @@ extern BOOLEAN _IsAddressSafe(IN PVOID pCheckAddress);
 
 extern volatile PVOID g_pSpiiNonLargePage;
 
-extern PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_OBJS], IN ULONG32 FlagsExecute, IN PVOID pEprocessTrgtImg, IN PVOID pNameSection, IN PVOID pModuleName, IN PVOID pSig, IN PVOID pMaskSig);
+extern PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN ULONG32 FlagsExecute, IN PVOID pEprocessTrgtImg, IN PVOID pNameSection, IN PVOID pModuleName, IN PVOID pSig, IN PVOID pMaskSig);
 
-extern PVOID _SearchPatternInRegion(IN ULONG64 OptionalData[SPIR_AMOUNT_OPTIONAL_OBJS], IN ULONG32 FlagsExecute, IN PUCHAR pRegionSearch, IN PUCHAR pSig, IN PUCHAR pMaskSig, IN PUCHAR pStopSig, IN ULONG32 LenStopSig);
+extern PVOID _SearchPatternInRegion(IN ULONG64 OptionalData[SPIR_AMOUNT_OPTIONAL_DATA], IN ULONG32 FlagsExecute, IN PUCHAR pRegionSearch, IN PUCHAR pSig, IN PUCHAR pMaskSig, IN PUCHAR pStopSig, IN ULONG32 LenStopSig);

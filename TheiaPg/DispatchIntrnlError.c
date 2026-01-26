@@ -97,7 +97,7 @@ DECLSPEC_NORETURN VOID DieDispatchIntrnlError(IN ULONG32 InternalCode)
 	{
 		_disable();
 
-		while (TRUE)
+		for(; ;)
 		{
 			if (g_DieDeadlockMethod)
 			{
