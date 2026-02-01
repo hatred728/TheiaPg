@@ -12,7 +12,7 @@
 
 #else
 
-#define DbgLog(a, ...) VOID
+#define DbgLog(a1, ...) VOID
 
 #define DbgText(a1) VOID
 

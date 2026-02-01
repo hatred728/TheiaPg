@@ -31,7 +31,7 @@ VOID TheiaEntry(VOID)
 
     InitTheiaContext();
 
-    DataIndpnRWVMem.pVa = g_pTheiaCtx->pKiMcaDeferredRecoveryService;;
+    DataIndpnRWVMem.pVa = g_pTheiaCtx->pKiMcaDeferredRecoveryService;
     
     DbgLog("[TheiaPg <+>] TheiaEntry: FixKiMcaDeferredRecoveryService\n");
     
@@ -79,7 +79,7 @@ VOID TheiaEntry(VOID)
     
     HrdIndpnRWVMemory(&DataIndpnRWVMem);
     
-    DbgLog("[TheiaPg <+>] TheiaEntry: FixMaxDataSize\n");
+    DbgLog("[TheiaPg <+>] TheiaEntry: FixgMaxDataSize\n");
     
     //
     // Nulling gMaxDataSize is necessary to neutralize the PG check routine,
@@ -92,15 +92,65 @@ VOID TheiaEntry(VOID)
     
     g_pTheiaCtx->pKeIpiGenericCall(&SearchKdpcInPgPrcbFields, NULL);
 
-    DbgLog("[TheiaPg <+>] TheiaEntry: FixKiBalanceSetManagerPeriodicDpc\n");
+    DbgLog("[TheiaPg <+>] TheiaEntry: FixgKiBalanceSetManagerPeriodicDpc\n");
 
     if (((PKDPC)g_pTheiaCtx->pKiBalanceSetManagerPeriodicDpc)->DeferredRoutine != g_pTheiaCtx->pKiBalanceSetManagerDeferredRoutine)
     {
-        DbgLog("[TheiaPg <+>] TheiaEntry: Detect PG DeferredRoutine in KiBalanceSetManagerPeriodicDpc\n");
+        DbgLog("[TheiaPg <+>] TheiaEntry: Detect PG-DeferredRoutine in gKiBalanceSetManagerPeriodicDpc | DeferredRoutine: 0x%I64X\n", ((PKDPC)g_pTheiaCtx->pKiBalanceSetManagerPeriodicDpc)->DeferredRoutine);
+
+        DataIndpnRWVMem.pVa = ((PKDPC)g_pTheiaCtx->pKiBalanceSetManagerPeriodicDpc)->DeferredRoutine;
+
+        HrdIndpnRWVMemory(&DataIndpnRWVMem);
 
         ((PKDPC)g_pTheiaCtx->pKiBalanceSetManagerPeriodicDpc)->DeferredRoutine = g_pTheiaCtx->pKiBalanceSetManagerDeferredRoutine;
     }
-    
+    else if ((((PKDPC)g_pTheiaCtx->pKiBalanceSetManagerPeriodicDpc)->DeferredContext != g_pTheiaCtx->pKiBalanceSetManagerPeriodicEvent))
+    {
+        //
+        // If the DeferredContext field represents a value that does not have a canonical part inherent to VA-UserSpace/KernelSpace, 
+        // then KiCustomAccessRoutineX from __try (SEH) is called:
+        // ###
+        // 
+        // LONG __fastcall KiBalanceSetManagerDeferredRoutine(PKDPC pDpc (RCX), PKEVENT DeferredContext (RDX), PVOID SystemArgument1 (R8), PVOID SystemArgument2 (R9))
+        // {
+        //     _DWORD v9[22]; // [rsp+0h] [rbp-158h] BYREF
+        //     _BYTE v10[55]; // [rsp+90h] [rbp-C8h] BYREF
+        //     __int64 v11; // [rsp+C7h] [rbp-91h]
+        //     __int64 v12; // [rsp+E7h] [rbp-71h]
+        //     _DWORD* v13; // [rsp+140h] [rbp-18h]
+        // 
+        //     v13 = v9;
+        //     memset_0(v10, 0, 0x5Fu);
+        // 
+        //     ##
+        //     ## It is the high-entropy encrypted BaseVa-PgCtx passed via DeferredContext that will cause an exception in the __unwind block later in the recursive call loop of one of the KiCustomRecurseRoutineX.
+        //     ##
+        //     if ((__int64)DeferredContext >> 47 != 0xff && (__int64)DeferredContext >> 47 != 0x00) ###< Checking the canonical part (VA-KernelSpace/UserSpace) of the DeferredContext value.
+        //     {
+        //         v9[12] = 0;
+        //         *(_BYTE*)pDpc = 0;
+        //         *(_QWORD*)(pDpc + 32) = SystemArgument2 >> 8;
+        //         v12 = SystemArgument1;
+        //         v11 = __ROL8__(DeferredContext, SystemArgument1);
+        //         *(_QWORD*)&v10[31] = __ROR8__(pDpc, SystemArgument1);
+        //         *(_QWORD*)(a1 + 40) ^= SystemArgument2;
+        //         *(_QWORD*)(a1 + 48) ^= SystemArgument1;
+        //         KiCustomAccessRoutine6(DeferredContext); ###< Call the caller KiCustomRecurseRoutineX.
+        //     }
+        // 
+        //     return KeSetEvent(DeferredContext, 10, 0);
+        // }
+        // 
+        // ###
+        // This means that PgInitRoutine may not overwrite the DeferredRoutine field with one of the PgDpcRoutines instead,
+        // the DeferredContext field may be passed an encrypted BaseVa-PgCtx that initiates the launch of the check procedures.
+        //
+        DbgLog("[TheiaPg <+>] TheiaEntry: Detect PG-DeferredContext in gKiBalanceSetManagerPeriodicDpc | DeferredContext: 0x%I64X\n", ((PKDPC)g_pTheiaCtx->pKiBalanceSetManagerPeriodicDpc)->DeferredContext);
+
+        ((PKDPC)g_pTheiaCtx->pKiBalanceSetManagerPeriodicDpc)->DeferredContext = g_pTheiaCtx->pKiBalanceSetManagerPeriodicEvent;
+    }
+    else { VOID; } ///< For clarity.
+
     RelatedDataICT.pHookRoutine = &VsrKiExecuteAllDpcs;
     RelatedDataICT.pBasePatch = _SearchPatternInRegion(NULL, SPIR_NO_OPTIONAL, g_pTheiaCtx->pKiExecuteAllDpcs, g_pTheiaCtx->TheiaMetaDataBlock.KIEXECUTEALLDPCS_SIG, g_pTheiaCtx->TheiaMetaDataBlock.KIEXECUTEALLDPCS_MASK, &StopSig, sizeof StopSig);
     
@@ -233,7 +283,7 @@ VOID TheiaEntry(VOID)
     
     } while (FALSE);
 
-    InitSearchPgSysThread(); ///< Calling initalizer sys-threads-walk.
+    InitSearchPgSysThread();
 
     return;
 }

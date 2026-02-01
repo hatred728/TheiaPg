@@ -16,8 +16,6 @@ static PVOID HkBuilderWrapperCallTrmpln(IN PICT_DATA_RELATED pRelatedDataICT)
 {
     #define ERROR_BUILD_STUB_CALL_TRMPLN 0x8eabcf40I32
 
-    CheckStatusTheiaCtx();
-
     UCHAR CoreWrapperCall[] =
     {
       0x48, 0x89, 0xe5,                                 // mov    rbp,rsp    
@@ -148,8 +146,6 @@ static PVOID HkBuilderWrapperCallTrmpln(IN PICT_DATA_RELATED pRelatedDataICT)
 static VOID HkInitCallTrmplnIntrnl(IN OUT PICT_DATA_RELATED pRelatedDataICT)
 {
     #define ERROR_INIT_CALL_TRMPLN_INTRNL 0x6f21b8d4I32
-
-    CheckStatusTheiaCtx();
 
     UCHAR CallTrmpln[] =
     {

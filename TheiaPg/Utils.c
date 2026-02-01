@@ -415,7 +415,7 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
 
 NoRetBaseAddrModule:
   
-    if (((PIMAGE_DOS_HEADER)pBaseAddrModule)->e_magic == 0x5A4DUI16)
+    if (((PIMAGE_DOS_HEADER)pBaseAddrModule)->e_magic == 0x5a4dUI16)
     {
         if (*((PUSHORT)(((PUCHAR)pBaseAddrModule) + ((PIMAGE_DOS_HEADER)pBaseAddrModule)->e_lfanew)) == 0x4550UI32)
         {
@@ -471,7 +471,7 @@ NoRetBaseAddrModule:
             {
                 if (j >= 64UI32 && !(j % 64UI32))
                 {
-                    _mm_prefetch((((ULONG64)pBaseAddrExeRegion + j) & ~0x3F), PF_NON_TEMPORAL_LEVEL_ALL);
+                    _mm_prefetch((((ULONG64)pBaseAddrExeRegion + j) & ~0x3f), PF_NON_TEMPORAL_LEVEL_ALL);
 
                     _mm_prefetch(((PUCHAR)pSig) + j, PF_NON_TEMPORAL_LEVEL_ALL);
 
@@ -479,7 +479,7 @@ NoRetBaseAddrModule:
                 }
                 else if (!j)
                 {
-                    _mm_prefetch(((ULONG64)pBaseAddrExeRegion & ~0x3F), PF_NON_TEMPORAL_LEVEL_ALL);
+                    _mm_prefetch(((ULONG64)pBaseAddrExeRegion & ~0x3f), PF_NON_TEMPORAL_LEVEL_ALL);
 
                     _mm_prefetch(pSig, PF_NON_TEMPORAL_LEVEL_ALL);
 
@@ -502,9 +502,9 @@ NoRetBaseAddrModule:
         }
         else if (FlagsExecute & SPII_SCAN_CALLER_INPUT_ADDRESS)
         {
-            _mm_prefetch(((ULONG64)pBaseAddrExeRegion & ~0x3F), PF_NON_TEMPORAL_LEVEL_ALL);
+            _mm_prefetch(((ULONG64)pBaseAddrExeRegion & ~0x3f), PF_NON_TEMPORAL_LEVEL_ALL);
             
-            if (*pBaseAddrExeRegion == 0xE8UI8)
+            if (*pBaseAddrExeRegion == 0xe8UI8)
             {
                 SaveRel32Offset = *(PLONG32)(pBaseAddrExeRegion + 1UI64);
 
@@ -691,7 +691,7 @@ PVOID _SearchPatternInRegion(IN ULONG64 OptionalData[SPIR_AMOUNT_OPTIONAL_DATA],
         }
         else if (FlagsExecute & SPIR_SCAN_CALLER_INPUT_ADDRESS)
         {
-            if (*pRegionSearch == 0xE8UI8)
+            if (*pRegionSearch == 0xe8UI8)
             {
                 SaveRel32Offset = *(PLONG32)(pRegionSearch + 1UI64);
 

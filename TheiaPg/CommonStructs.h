@@ -561,6 +561,7 @@ typedef struct _KTIMER_TABLE
 typedef struct _THEIA_METADATA_BLOCK
 {
     ULONG32 KPCR_TssBase_OFFSET;
+    ULONG32 KPCR_CurrentPrcb_OFFSET;
     ULONG32 KPCR_Prcb_OFFSET;
     ULONG32 KPRCB_CurrentThread_OFFSET;
     ULONG32 KPRCB_IdleThread_OFFSET;
@@ -686,6 +687,7 @@ typedef struct _THEIA_CONTEXT
     PVOID pKiCustomRecurseRoutineX; ///< IsPgRoutine | Callers: pKiCustomAccessRoutineX | Executed from IsrDispatchLevelExecuteCtx.
     PVOID pKiBalanceSetManagerDeferredRoutine;
     PVOID pKiBalanceSetManagerPeriodicDpc;
+    PVOID pKiBalanceSetManagerPeriodicEvent;
 
     //
     // The engineers of the PatchGuard component, for some reason unknown to me, did not add __noreturn for KiScanQueues/KiSchedulerDpc (Callers KiMcaDeferredRecoveryService), 
