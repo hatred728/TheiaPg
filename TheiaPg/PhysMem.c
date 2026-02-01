@@ -324,7 +324,7 @@ PMMPTE_HARDWARE HrdGetPteInputVa(IN PVOID pVa)
 
 	if (!pVa || !((__readcr8() <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pVa) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pVa)))
 	{
-		DbgLog("[TheiaPg <->] HrdGetPteInputVa: Invalid Va\n");
+		DbgLog("[TheiaPg <->] HrdGetPteInputVa: Invalid VA | VA: 0x%I64X\n", pVa);
 
 		DieDispatchIntrnlError(ERROR_GET_PTE_VA);
 	}

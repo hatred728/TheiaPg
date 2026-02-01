@@ -84,7 +84,25 @@ VOID TheiaEntry(VOID)
     //
     // Nulling gMaxDataSize is necessary to neutralize the PG check routine,
     // which is called through a global pointer in the kernel module mssecflt.sys and checks MaxDataSize is NULL, if NULL is detected
-    // then the execution of the check routine logically jump to epilog, unlike KiSwInterruptDispatch.
+    // then the execution of the check routine logically jump to epilog, unlike KiSwInterruptDispatch:
+    // 
+    // KiSwInterruptDispatch:
+    // 
+    // .text:00000001405081BD 158 48 8B 3D 84 D8 AB  mov     rdi, cs:MaxDataSize (gPgCtx)
+    // .text:00000001405081BD 158 00                 
+    // .text:00000001405081C4 158 4C 8B E9           mov     r13, rcx
+    // .text:00000001405081C7 158 F7 87 DC 09 00 00  test    dword ptr [rdi+9DCh], 100000h ; Logical Compare
+    // 
+    // 
+    // sub_?????????: (PgCallBackRoutine)
+    // 
+    // .text:0000000140509CFA 788 48 8B 35 47 BD AB  mov     rsi, cs:MaxDataSize 
+    // .text:0000000140509CFA 788 00
+    // .text:0000000140509D01 788 F0 44 09 3C 24     lock or [rsp+780h+var_780], r15d ; Logical Inclusive OR
+    // .text:0000000140509D06 788 48 85 F6           test    rsi, rsi ; Logical Compare
+    // .text:0000000140509D09 788 75 0A              jnz     short loc_140509D15 ; Jump if Not Zero (ZF=0)
+    // .text:0000000140509D0B 788 B8 A3 00 00 C0     mov     eax, 0C00000A3h
+    // .text:0000000140509D10 788 E9 FA E6 00 00     jmp     loc_14051840F ; Jump
     //
     *(PULONG64)g_pTheiaCtx->ppMaxDataSize = NULL; ///< pp: pointer to pointer.
     

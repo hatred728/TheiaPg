@@ -17,7 +17,7 @@ volatile VOID VsrKiExecuteAllDpcs(IN PINPUTCONTEXT_ICT pInputCtx)
 
     CONST UCHAR ReasonDetect0[] = { "Unbacked DeferredRoutine" };
 
-    CONST UCHAR ReasonDetect1[] = { "PG DeferredContext" };
+    CONST UCHAR ReasonDetect1[] = { "High-Entropy DeferredContext" };
 
     CONST UCHAR ReasonDetectError[] = { "UNKNOWN" };
 
@@ -157,7 +157,7 @@ volatile VOID VsrKiRetireDpcList(IN PINPUTCONTEXT_ICT pInputCtx)
 
     CONST UCHAR ReasonDetect0[] = { "Unbacked DeferredRoutine" };
 
-    CONST UCHAR ReasonDetect1[] = { "PG DeferredContext" };
+    CONST UCHAR ReasonDetect1[] = { "High-Entropy DeferredContext" };
 
     CONST UCHAR ReasonDetectError[] = { "UNKNOWN" };
 
@@ -409,7 +409,7 @@ volatile VOID VsrExQueueWorkItem(IN PINPUTCONTEXT_ICT pInputCtx)
 
     CONST UCHAR ReasonDetect0[] = { "Unbacked WorkerRoutine" };
 
-    CONST UCHAR ReasonDetect1[] = { "PG Parameter" };
+    CONST UCHAR ReasonDetect1[] = { "High-Entropy Parameter" };
 
     CONST UCHAR ReasonDetectError[] = { "UNKNOWN" };
 
@@ -576,6 +576,8 @@ volatile VOID VsrExAllocatePool2(IN OUT PINPUTCONTEXT_ICT pInputCtx)
 
     PVOID pPgCtx = NULL;
 
+    BOOLEAN DetectHit = FALSE;
+
     StackHigh = *(PVOID*)(pCurrentObjThread + g_pTheiaCtx->TheiaMetaDataBlock.KTHREAD_InitialStack_OFFSET);
 
     StackLow = *(PVOID*)(pCurrentObjThread + g_pTheiaCtx->TheiaMetaDataBlock.KTHREAD_StackLimit_OFFSET);
@@ -601,13 +603,13 @@ volatile VOID VsrExAllocatePool2(IN OUT PINPUTCONTEXT_ICT pInputCtx)
             {             
                 JmpDetectNonBackedStack:
 
-                DbgLog("[TheiaPg <+>] VsrExAllocatePool2: Detect non-backed stack calls | TCB: 0x%I64X TID: 0x%hX\n", pCurrentObjThread, *pCurrentTID);
+                DbgLog("[TheiaPg <+>] VsrExAllocatePool2: Detect unbacked stack-calls | TCB: 0x%I64X TID: 0x%hX\n", pCurrentObjThread, *pCurrentTID);
 
                 JmpDetectPgCtxInCpuExecuteCtx:
                 
                 pRetAddrsTrace[i] = pInternalCtx->Rip;
 
-                DbgLog("=================================================================\n");
+                DbgLog("===============================================================\n");
                 DbgLog("RAX: 0x%I64X\n", pInternalCtx->Rax);
                 DbgLog("RCX: 0x%I64X\n", pInternalCtx->Rcx);
                 DbgLog("RDX: 0x%I64X\n", pInternalCtx->Rdx);
@@ -626,7 +628,7 @@ volatile VOID VsrExAllocatePool2(IN OUT PINPUTCONTEXT_ICT pInputCtx)
                 DbgLog("RBP: 0x%I64X\n", pInternalCtx->Rbp);
                 DbgLog("RIP: 0x%I64X\n\n", pInternalCtx->Rip);
                 DbgLog("RFLAGS: 0x%I64X\n", pInternalCtx->EFlags);
-                DbgLog("================================================================\n");
+                DbgLog("===============================================================\n");
 
                 DbgText
                 ( // {
@@ -641,8 +643,6 @@ volatile VOID VsrExAllocatePool2(IN OUT PINPUTCONTEXT_ICT pInputCtx)
                 ) // }
 
                 DbgLog("[TheiaPg <+>] VsrExAllocatePool2: Handling exit phase...\n\n");
-
-                if (pInputCtx->rax) { ExFreePool(pInputCtx->rax); pInputCtx->rax = 0I64; }
 
                 if ((!pPgCtx ? (pPgCtx = SearchPgCtxInCtx(pInternalCtx)) : pPgCtx))
                 {
@@ -700,6 +700,8 @@ volatile VOID VsrExAllocatePool2(IN OUT PINPUTCONTEXT_ICT pInputCtx)
 
                     JmpToPossibleSleep:
 
+                    DetectHit = TRUE;
+
                     if (__readcr8() < DISPATCH_LEVEL)
                     {
                         DbgLog("[TheiaPg <+>] VsrExAllocatePool2: Enter to dead sleep... | IRQL: 0x%02X\n\n", __readcr8());
@@ -722,6 +724,15 @@ volatile VOID VsrExAllocatePool2(IN OUT PINPUTCONTEXT_ICT pInputCtx)
                         // so it is necessary to set the counter to -1 to perform an overflow of the 32-bit field to keep the counter at 0.
                         //
                         *(PULONG32)((PUCHAR)pPgCtx + 0xA60) = -1UI32; ///< Required as an alternative method to prevent the rescheduling of the PG check procedure execution in the case of (CurrIRQL > APC_LEVEL).
+
+                        if (pInputCtx->rax) 
+                        { 
+                            *(PUCHAR)pInputCtx->rax &= 0x00UI8; ///< Fix DemandZero (Only PT-PTEs)
+
+                            ExFreePool(pInputCtx->rax);
+
+                            pInputCtx->rax = 0I64;
+                        }
 
                         break; 
                     }
@@ -748,19 +759,21 @@ volatile VOID VsrExAllocatePool2(IN OUT PINPUTCONTEXT_ICT pInputCtx)
     }
     else { goto JmpDetectNonBackedStack; }
 
-    // if (!IsSleep)
-    // {
-    //     if (pInputCtx->rax)
-    //     {
-    //         if ((*(PULONG64)(HrdGetPteInputVa((PVOID)pInputCtx->rax)) & 0x10801UI64) == 0x801UI64) ///< Checking RWX PTE-Attributes.
-    //         {
-    //             DbgLog("[TheiaPg <+>] VsrExAllocatePool2: Detect attempt allocate RWX-Page | NoPgArtifacts\n\n");
-    // 
-    //             if (__readcr8() < DISPATCH_LEVEL) { IsSleep = TRUE; }
-    //             else { ExFreePool(pInputCtx->rax); pInputCtx->rax = 0I64; }
-    //         }
-    //     }
-    // }
+    if (!DetectHit)
+    {
+        if (pInputCtx->rax)
+        {
+            *(PUCHAR)pInputCtx->rax &= 0x00UI8; ///< Fix DemandZero (Only PT-PTEs)
+
+            if ((*(PULONG64)(HrdGetPteInputVa((PVOID)pInputCtx->rax)) & 0x8000000000000801I64) == 0x801UI64) ///< Checking RWX PTE-Attributes.
+            {
+                DbgLog("[TheiaPg <+>] VsrExAllocatePool2: Detect attempt allocate RWX-Page\n\n");
+    
+                if (__readcr8() < DISPATCH_LEVEL) { IsSleep = TRUE; }
+                else { ExFreePool(pInputCtx->rax); pInputCtx->rax = 0I64; }
+            }
+        }
+    }
 
     g_pTheiaCtx->pMmFreeIndependentPages(pInternalCtx, PAGE_SIZE, 0I64);
 
