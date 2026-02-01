@@ -603,13 +603,13 @@ volatile VOID VsrExAllocatePool2(IN OUT PINPUTCONTEXT_ICT pInputCtx)
             {             
                 JmpDetectNonBackedStack:
 
-                DbgLog("[TheiaPg <+>] VsrExAllocatePool2: Detect unbacked stack-calls | TCB: 0x%I64X TID: 0x%hX\n", pCurrentObjThread, *pCurrentTID);
+                DbgLog("[TheiaPg <+>] VsrExAllocatePool2: Detect non-backed stack calls | TCB: 0x%I64X TID: 0x%hX\n", pCurrentObjThread, *pCurrentTID);
 
                 JmpDetectPgCtxInCpuExecuteCtx:
                 
                 pRetAddrsTrace[i] = pInternalCtx->Rip;
 
-                DbgLog("===============================================================\n");
+                DbgLog("=================================================================\n");
                 DbgLog("RAX: 0x%I64X\n", pInternalCtx->Rax);
                 DbgLog("RCX: 0x%I64X\n", pInternalCtx->Rcx);
                 DbgLog("RDX: 0x%I64X\n", pInternalCtx->Rdx);
@@ -628,7 +628,7 @@ volatile VOID VsrExAllocatePool2(IN OUT PINPUTCONTEXT_ICT pInputCtx)
                 DbgLog("RBP: 0x%I64X\n", pInternalCtx->Rbp);
                 DbgLog("RIP: 0x%I64X\n\n", pInternalCtx->Rip);
                 DbgLog("RFLAGS: 0x%I64X\n", pInternalCtx->EFlags);
-                DbgLog("===============================================================\n");
+                DbgLog("=================================================================\n");
 
                 DbgText
                 ( // {
