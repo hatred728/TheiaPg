@@ -144,7 +144,7 @@
     <ClCompile Include="TheiaEntry.c" />
     <ClCompile Include="ImgEntry.c" />
     <ClCompile Include="PgSysThreads.c" />
-    <ClCompile Include="InitCallTrmpln.c" />
+    <ClCompile Include="CallTrmpln.c" />
     <ClCompile Include="VisorRoutines.c" />
     <ClCompile Include="Utils.c" />
     <ClCompile Include="PgUtils.c" />
@@ -163,7 +163,7 @@
     <ClInclude Include="CommonStructs.h" />
     <ClInclude Include="PgSysThreads.h" />
     <ClInclude Include="VisorRoutines.h" />
-    <ClInclude Include="InitCallTrmpln.h" />
+    <ClInclude Include="CallTrmpln.h" />
     <ClInclude Include="DieBugCheck.h" />
     <ClInclude Include="Stacx64.h" />
     <ClInclude Include="Utils.h" />

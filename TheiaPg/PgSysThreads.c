@@ -1,24 +1,24 @@
 #include "LinkHeader.h"
 
 /*++
-* Routine: BuilderWrapperApcRoutine
+* Routine: BuildStubApcRoutine
 *
 * MaxIRQL: DISPATCH_LEVEL
 *
 * Public/Private: Private
 *
-* @param Routine: Routine for Wrapper-KiDeliverApc (caller)
+* @param Routine: Routine for building a trampoline stub
 * 
 * Description: Important for BYOVD support, 
-* without wrapper, unwind current stack will not be able to correctly working without access to the .pdata segment TheiaPg.sys in memory.
+* without stub, unwind current stack will not be able to correctly working without access to the .pdata segment TheiaPg.sys in memory.
 --*/
-static PVOID BuilderWrapperApcRoutine(IN PVOID pRoutine)
+static PVOID BuildStubApcRoutine(IN PVOID pRoutine)
 {
     #define ERROR_BUILD_STUB_APC_ROUTINE 0x0004b50fUI32
 
     CheckStatusTheiaCtx();
 
-    UCHAR CoreWrapperCall[] =
+    UCHAR CoreStubCall[] =
     {
       0x48, 0x89, 0xe5,                         // mov    rbp,rsp    
       0x48, 0x89, 0xe1,                         // mov    rcx,rsp
@@ -80,15 +80,15 @@ static PVOID BuilderWrapperApcRoutine(IN PVOID pRoutine)
 
     HrdPatchAttributesInputPte(0x7FFFFFFFFFFFFFFFUI64, 0UI64, pPageStub);
 
-    *(PVOID*)((PUCHAR)&CoreWrapperCall + 24) = pRoutine;
+    *(PVOID*)((PUCHAR)&CoreStubCall + 24) = pRoutine;
 
     memset(pPageStub, 0I32, PAGE_SIZE);
 
     memcpy(pPageStub, SaveContext, sizeof(SaveContext));
 
-    memcpy((PUCHAR)pPageStub + sizeof(SaveContext), CoreWrapperCall, sizeof(CoreWrapperCall));
+    memcpy((PUCHAR)pPageStub + sizeof(SaveContext), CoreStubCall, sizeof(CoreStubCall));
 
-    memcpy((PUCHAR)pPageStub + (sizeof(SaveContext) + sizeof(CoreWrapperCall)), ClearSaveContext, sizeof(ClearSaveContext));
+    memcpy((PUCHAR)pPageStub + (sizeof(SaveContext) + sizeof(CoreStubCall)), ClearSaveContext, sizeof(ClearSaveContext));
 
     return pPageStub;
 }
@@ -100,136 +100,119 @@ static PVOID BuilderWrapperApcRoutine(IN PVOID pRoutine)
 *
 * Public/Private: Private
 *
-* @param InputCtx: Context passed from WrapperApcRoutine
+* @param InputCtx: Context passed from StubApcRoutine
 *
 * Description: Required to intercept system threads that are executing code from an Unbacked-Region.
 --*/
-static volatile VOID SearchPgSysThreadRoutine(IN OUT PINPUTCONTEXT_STUBAPCROUTINE pInputCtx)
+volatile VOID SearchPgSysThreadRoutine(IN OUT PINPUTCONTEXT_ICT pInputCtx)
 {
     CheckStatusTheiaCtx();
 
+    if (!(g_pTheiaCtx->pPsIsSystemThread((PETHREAD)__readgsqword(0x188UI32)))) { return; }
+
     PCONTEXT pInternalCtx = (PCONTEXT)g_pTheiaCtx->pMmAllocateIndependentPagesEx(PAGE_SIZE, -1I32, 0I64, 0I32);
 
-    if (!pInternalCtx) { DbgLog("[TheiaPg <!>] SearchPgSysThreadRoutine: Bad alloc page for InternalCtx\n"); return; }
+    if (!pInternalCtx) { DbgLog("[TheiaPg <->] SearchPgSysThreadRoutine: Bad alloc page for InternalCtx\n"); return; }
 
     pInternalCtx->ContextFlags = CONTEXT_CONTROL;
-    pInternalCtx->Rax          = pInputCtx->rax;
-    pInternalCtx->Rcx          = pInputCtx->rcx;
-    pInternalCtx->Rdx          = pInputCtx->rdx;
-    pInternalCtx->Rbx          = pInputCtx->rbx;
-    pInternalCtx->Rsi          = pInputCtx->rsi;
-    pInternalCtx->Rdi          = pInputCtx->rdi;
-    pInternalCtx->R8           = pInputCtx->r8;
-    pInternalCtx->R9           = pInputCtx->r9;
-    pInternalCtx->R10          = pInputCtx->r10;
-    pInternalCtx->R11          = pInputCtx->r11;
-    pInternalCtx->R12          = pInputCtx->r12;
-    pInternalCtx->R13          = pInputCtx->r13;
-    pInternalCtx->R14          = pInputCtx->r14;
-    pInternalCtx->R15          = pInputCtx->r15;
-    pInternalCtx->Rbp          = pInputCtx->rbp;
-    pInternalCtx->Rsp          = pInputCtx->rsp;
-    pInternalCtx->Rip          = pInputCtx->rip;
-    pInternalCtx->EFlags       = pInputCtx->Rflags;
+    pInternalCtx->Rax = pInputCtx->rax;
+    pInternalCtx->Rcx = pInputCtx->rcx;
+    pInternalCtx->Rdx = pInputCtx->rdx;
+    pInternalCtx->Rbx = pInputCtx->rbx;
+    pInternalCtx->Rsi = pInputCtx->rsi;
+    pInternalCtx->Rdi = pInputCtx->rdi;
+    pInternalCtx->R8 = pInputCtx->r8;
+    pInternalCtx->R9 = pInputCtx->r9;
+    pInternalCtx->R10 = pInputCtx->r10;
+    pInternalCtx->R11 = pInputCtx->r11;
+    pInternalCtx->R12 = pInputCtx->r12;
+    pInternalCtx->R13 = pInputCtx->r13;
+    pInternalCtx->R14 = pInputCtx->r14;
+    pInternalCtx->R15 = pInputCtx->r15;
+    pInternalCtx->Rbp = pInputCtx->rbp;
+    pInternalCtx->Rsp = pInputCtx->rsp;
+    pInternalCtx->Rip = pInputCtx->rip;
+    pInternalCtx->EFlags = pInputCtx->Rflags;
 
-    PULONG64 pRetAddrsTrace = (PULONG64)g_pTheiaCtx->pMmAllocateIndependentPagesEx(PAGE_SIZE, -1I32, 0I64, 0I32); ///< Required to trace call stack return addresses on Stack-Unwind.
+    PULONG64 pRetAddrsTrace = (PULONG64)g_pTheiaCtx->pMmAllocateIndependentPagesEx(PAGE_SIZE, -1I32, 0I64, 0I32);
 
-    if (!pRetAddrsTrace) { DbgLog("[TheiaPg <!>] SearchPgSysThreadRoutine: Bad alloc page for RetAddrsTrace\n"); return; }
+    if (!pRetAddrsTrace) { DbgLog("[TheiaPg <->] SearchPgSysThreadRoutine: Bad alloc page for RetAddrsTrace\n"); return; }
 
-    PVOID StackHigh, StackLow;
-
-    PVOID pImageBase = NULL;
-
-    PVOID pRuntimeFunction = NULL;
-
-    PVOID pHandlerData = NULL;
-
-    ULONG64 EstablisherFrame = 0UI64;
-
-    PUCHAR pCurrentObjThread = (PUCHAR)__readgsqword(0x188UI32); ///< KPCR.KPRCB.CurrentThread
-
+    PUCHAR pCurrentObjThread = (PUCHAR)__readgsqword(0x188UI32);
     PUSHORT pCurrentTID = (PUSHORT)(pCurrentObjThread + (g_pTheiaCtx->TheiaMetaDataBlock.ETHREAD_Cid_OFFSET + g_pTheiaCtx->TheiaMetaDataBlock.CLIENT_ID_UniqueThread_OFFSET));
 
+    PVOID StackHigh = *(PVOID*)(pCurrentObjThread + g_pTheiaCtx->TheiaMetaDataBlock.KTHREAD_InitialStack_OFFSET);
+    PVOID StackLow = *(PVOID*)(pCurrentObjThread + g_pTheiaCtx->TheiaMetaDataBlock.KTHREAD_StackLimit_OFFSET);
+
+    PVOID pImageBase = NULL;
+    PVOID pRuntimeFunction = NULL;
+    PVOID pHandlerData = NULL;
+    ULONG64 EstablisherFrame = 0UI64;
+
     CONST LONG64 Timeout = (-10000UI64 * 31536000000UI64); ///< 1 year.
-
     LONG32 SaveRel32Offset = 0I32;
-
-    CONST UCHAR RetOpcode = 0xC3UI8;
-
+    CONST UCHAR RetOpcode = 0xc3UI8;
     BOOLEAN OldIF = FALSE;
-
-    INDPN_RW_V_MEMORY_DATA DataIndpnRWVMem = { 0 };
-
-    DataIndpnRWVMem.FlagsExecute = MEM_INDPN_RW_WRITE_OP_BIT;
-
-    DataIndpnRWVMem.pIoBuffer = &RetOpcode;
-
-    DataIndpnRWVMem.LengthRW = 1UI64;
+    UCHAR CurrIrql = (UCHAR)__readcr8();
 
     PVOID pSearchSdbpCheckDllRWX = NULL;
-
-    BOOLEAN IsSleep = FALSE;
-
     PVOID pPgDpcRoutine = NULL;
-
     PVOID pPgApcRoutine = NULL;
 
+    INDPN_RW_V_MEMORY_DATA DataIndpnRWVMem = { 0 };
+    DataIndpnRWVMem.FlagsExecute = MEM_INDPN_RW_WRITE_OP_BIT;
+    DataIndpnRWVMem.pIoBuffer = &RetOpcode;
+    DataIndpnRWVMem.LengthRW = 1UI64;
+
+    BOOLEAN IsSleep = FALSE;
     PVOID pPgCtx = NULL;
 
-    StackHigh = *(PVOID*)(pCurrentObjThread + g_pTheiaCtx->TheiaMetaDataBlock.KTHREAD_InitialStack_OFFSET);
-
-    StackLow = *(PVOID*)(pCurrentObjThread + g_pTheiaCtx->TheiaMetaDataBlock.KTHREAD_StackLimit_OFFSET);
-
-    if (_IsSafeAddress(pInternalCtx->Rip))
+    for (ULONG32 i = 0; ; ++i)
     {
-        for (ULONG32 i = 0UI32; ; ++i)
+        pRuntimeFunction = g_pTheiaCtx->pRtlLookupFunctionEntry(pInternalCtx->Rip, &pImageBase, NULL);
+
+        if (!pRuntimeFunction) ///< If the current routine leaf.
         {
-            pRuntimeFunction = g_pTheiaCtx->pRtlLookupFunctionEntry(pInternalCtx->Rip, &pImageBase, NULL);
+            pInternalCtx->Rip = *(PVOID*)pInternalCtx->Rsp;
 
-            if (!pRuntimeFunction) ///< If the current routine leaf.
-            {
-                pInternalCtx->Rip = *(PVOID*)pInternalCtx->Rsp;
+            pInternalCtx->Rsp += 8I64;
+        }
 
-                pInternalCtx->Rsp += 8I64;
-            }
+        g_pTheiaCtx->pRtlVirtualUnwind(0UI32, pImageBase, pInternalCtx->Rip, pRuntimeFunction, pInternalCtx, &pHandlerData, &EstablisherFrame, NULL);
 
-            g_pTheiaCtx->pRtlVirtualUnwind(0UI32, pImageBase, pInternalCtx->Rip, pRuntimeFunction, pInternalCtx, &pHandlerData, &EstablisherFrame, NULL);
+        if ((pInternalCtx->Rsp >= StackHigh) || (pInternalCtx->Rsp <= StackLow) || (pInternalCtx->Rip < 0xffff800000000000UI64)) { goto Exit; }
 
-            if ((pInternalCtx->Rsp >= StackHigh) || (pInternalCtx->Rsp <= StackLow) || (pInternalCtx->Rip < 0xffff800000000000UI64)) { break; } ///< The UserSpace address will not be marked as Unbacked.
+        pRetAddrsTrace[i] = pInternalCtx->Rip;
 
-            if (!(_IsSafeAddress(pInternalCtx->Rip)))
-            {
-                JmpDetectNonBackedStack:
+        if (!(_IsSafeAddress(pInternalCtx->Rip)))
+        {
+            DbgLog("[TheiaPg <+>] SearchPgSysThreadRoutine: Detect non-backed stack calls | TCB: 0x%I64X TID: 0x%hX\n", pCurrentObjThread, *pCurrentTID);
 
-                DbgLog("[TheiaPg <+>] SearchPgSysThreadRoutine: Detect non-backed stack calls | TCB: 0x%I64X TID: 0x%hX\n", pCurrentObjThread, *pCurrentTID);
+            OtherDetects:
 
-                JmpDetectPgCtxInCpuExecuteCtx:
+            DbgLog("=================================================================\n");
+            DbgLog("RAX: 0x%I64X\n", pInternalCtx->Rax);
+            DbgLog("RCX: 0x%I64X\n", pInternalCtx->Rcx);
+            DbgLog("RDX: 0x%I64X\n", pInternalCtx->Rdx);
+            DbgLog("RBX: 0x%I64X\n", pInternalCtx->Rbx);
+            DbgLog("RSI: 0x%I64X\n", pInternalCtx->Rsi);
+            DbgLog("RDI: 0x%I64X\n", pInternalCtx->Rdi);
+            DbgLog("R8:  0x%I64X\n", pInternalCtx->R8);
+            DbgLog("R9:  0x%I64X\n", pInternalCtx->R9);
+            DbgLog("R10: 0x%I64X\n", pInternalCtx->R10);
+            DbgLog("R11: 0x%I64X\n", pInternalCtx->R11);
+            DbgLog("R12: 0x%I64X\n", pInternalCtx->R12);
+            DbgLog("R13: 0x%I64X\n", pInternalCtx->R13);
+            DbgLog("R14: 0x%I64X\n", pInternalCtx->R14);
+            DbgLog("R15: 0x%I64X\n", pInternalCtx->R15);
+            DbgLog("RSP: 0x%I64X\n", pInternalCtx->Rsp);
+            DbgLog("RBP: 0x%I64X\n", pInternalCtx->Rbp);
+            DbgLog("RIP: 0x%I64X\n\n", pInternalCtx->Rip);
+            DbgLog("RFLAGS: 0x%I64X\n", pInternalCtx->EFlags);
+            DbgLog("=================================================================\n");
 
-                pRetAddrsTrace[i] = pInternalCtx->Rip;
-
-                DbgLog("=======================================================================\n");
-                DbgLog("RAX: 0x%I64X\n", pInternalCtx->Rax);
-                DbgLog("RCX: 0x%I64X\n", pInternalCtx->Rcx);
-                DbgLog("RDX: 0x%I64X\n", pInternalCtx->Rdx);
-                DbgLog("RBX: 0x%I64X\n", pInternalCtx->Rbx);
-                DbgLog("RSI: 0x%I64X\n", pInternalCtx->Rsi);
-                DbgLog("RDI: 0x%I64X\n", pInternalCtx->Rdi);
-                DbgLog("R8:  0x%I64X\n", pInternalCtx->R8);
-                DbgLog("R9:  0x%I64X\n", pInternalCtx->R9);
-                DbgLog("R10: 0x%I64X\n", pInternalCtx->R10);
-                DbgLog("R11: 0x%I64X\n", pInternalCtx->R11);
-                DbgLog("R12: 0x%I64X\n", pInternalCtx->R12);
-                DbgLog("R13: 0x%I64X\n", pInternalCtx->R13);
-                DbgLog("R14: 0x%I64X\n", pInternalCtx->R14);
-                DbgLog("R15: 0x%I64X\n", pInternalCtx->R15);
-                DbgLog("RSP: 0x%I64X\n", pInternalCtx->Rsp);
-                DbgLog("RBP: 0x%I64X\n", pInternalCtx->Rbp);
-                DbgLog("RIP: 0x%I64X\n\n", pInternalCtx->Rip);
-                DbgLog("RFLAGS: 0x%I64X\n", pInternalCtx->EFlags);
-                DbgLog("=======================================================================\n");
-
-                DbgText
-                ( // {
+            DbgText
+            ( // {
 
                 for (ULONG32 j = 0UI32; ; ++j)
                 {
@@ -238,93 +221,81 @@ static volatile VOID SearchPgSysThreadRoutine(IN OUT PINPUTCONTEXT_STUBAPCROUTIN
                     DbgLog("%I32d frame: 0x%I64X\n", j, pRetAddrsTrace[j]);
                 }
 
-                ) // }
+            ) // }
 
-                DbgLog("[TheiaPg <+>] SearchPgSysThreadRoutine: Handling exit phase...\n\n");
+            DbgLog("[TheiaPg <+>] SearchPgSysThreadRoutine: Handling exit phase...\n\n");
 
-                if ((!pPgCtx ? (pPgCtx = SearchPgCtxInCtx(pInternalCtx)) : pPgCtx))
-                {
-                    DbgLog("[TheiaPg <+>] SearchPgSysThreadRoutine: Detect possibly PgCaller | pPgCtx: 0x%I64X\n\n", pPgCtx);
+            DbgLog("[TheiaPg <+>] SearchPgSysThreadRoutine: Detect possibly PgCaller | pPgCtx: 0x%I64X\n\n", (pPgCtx = SearchPgCtxInCtx(pInternalCtx)));
 
-                    if (g_pTheiaCtx->pMmIsAddressValid(pPgDpcRoutine = *(PVOID*)((PUCHAR)pPgCtx + 0x7f8))) ///< LocalPgCtxBase + 0x7f8: PgDpcRoutine
-                    {
-                        if (!((HrdGetPteInputVa(pPgDpcRoutine))->NoExecute))
-                        {
-                            DbgLog("[TheiaPg <+>] SearchPgSysThreadRoutine: Detect PgDpcRoutine in PgCtx | PgDpcRoutine: 0x%I64X\n\n", pPgDpcRoutine);
-
-                            DataIndpnRWVMem.pVa = pPgDpcRoutine;
-
-                            HrdIndpnRWVMemory(&DataIndpnRWVMem);
-                        }
-                    }
-
-                    if (g_pTheiaCtx->pMmIsAddressValid(pPgApcRoutine = *(PVOID*)((PUCHAR)pPgCtx + 0xa30))) ///< LocalPgCtxBase + 0xA30: PgApcRoutine (basically KiDispatchCallout)
-                    {
-                        if (!((HrdGetPteInputVa(pPgApcRoutine))->NoExecute))
-                        {
-                            DbgLog("[TheiaPg <+>] SearchPgSysThreadRoutine: Detect PgApcRoutine in PgCtx | PgApcRoutine: 0x%I64X\n\n", pPgApcRoutine);
-
-                            DataIndpnRWVMem.pVa = pPgApcRoutine;
-
-                            HrdIndpnRWVMemory(&DataIndpnRWVMem);
-                        }
-                    }
-
-                    //
-                    // LocalPgCtxBase + 0x808: OffsetFirstRoutineCheck -> LocalPgCtxBase + OffsetFirstRoutineCheck: FirstRoutineCheck (Caller SdbpCheckDllRWX)
-                    //
-                    pSearchSdbpCheckDllRWX = ((PUCHAR)pPgCtx + (ULONG64)(*(PULONG32)((PUCHAR)pPgCtx + 0x808)));
-
-                    for (ULONG32 j = 0UI32; ; ++j)
-                    {
-                        if (((PUCHAR)pSearchSdbpCheckDllRWX)[j] == 0xCC && ((PUCHAR)pSearchSdbpCheckDllRWX)[j + 1] == 0xCC && ((PUCHAR)pSearchSdbpCheckDllRWX)[j + 2] == 0xCC)
-                        {
-                            SaveRel32Offset = *(PLONG32)((PUCHAR)pSearchSdbpCheckDllRWX + (j - 4));
-
-                            pSearchSdbpCheckDllRWX = (((ULONG64)pSearchSdbpCheckDllRWX + j) + ((SaveRel32Offset < 0I32) ? ((ULONG64)SaveRel32Offset | 0xffffffff00000000UI64) : (ULONG64)SaveRel32Offset));
-
-                   /* Skip: 488b742430 mov rsi, qword ptr [rsp+30h] */
-                            for (USHORT l = 5UI16; ; ++l)
-                            {
-                                if (((PUCHAR)pSearchSdbpCheckDllRWX)[l] == 0xff && ((PUCHAR)pSearchSdbpCheckDllRWX)[l + 1] == 0xe6) { break; }
-                                else { ((PUCHAR)pSearchSdbpCheckDllRWX)[l] = 0x90UI8; }
-                            }
-
-                            DbgLog("[TheiaPg <+>] SearchPgSysThreadRoutine: SdbpCheckDllRWX is found: 0x%I64X\n\n", pSearchSdbpCheckDllRWX);
-
-                            break;
-                        }
-                    }
-
-                    JmpToSleep:
-
-                    DbgLog("[TheiaPg <+>] SearchPgSysThreadRoutine: Enter to dead sleep... | IRQL: 0x%02X\n\n", __readcr8());
-
-                    // __debugbreak();
-
-                    IsSleep = TRUE;
-
-                    break;
-                }
-                else
-                {
-                    DbgLog("[TheiaPg <+>] SearchPgSysThreadRoutine: Detect possibly PgCaller | pPgCtx: Not-Found\n\n");
-
-                    goto JmpToSleep;
-                }
-            }
-
-            if (pPgCtx = SearchPgCtxInCtx(pInternalCtx))
+            if (pPgCtx)
             {
-                DbgLog("[TheiaPg <+>] SearchPgSysThreadRoutine: Detect PgCtx in CpuExecuteCtx | TCB: 0x%I64X TID: 0x%hX\n", pCurrentObjThread, *pCurrentTID);
+                if (g_pTheiaCtx->pMmIsAddressValid(pPgDpcRoutine = *(PVOID*)((PUCHAR)pPgCtx + 0x7f8))) ///< LocalPgCtxBase + 0x7f8: PgDpcRoutine
+                {
+                    if (!((HrdGetPteInputVa(pPgDpcRoutine))->NoExecute))
+                    {
+                        DbgLog("[TheiaPg <+>] SearchPgSysThreadRoutine: Detect PgDpcRoutine in PgCtx | PgDpcRoutine: 0x%I64X\n\n", pPgDpcRoutine);
 
-                goto JmpDetectPgCtxInCpuExecuteCtx;
+                        DataIndpnRWVMem.pVa = pPgDpcRoutine;
+
+                        HrdIndpnRWVMemory(&DataIndpnRWVMem);
+                    }
+                }
+
+                if (g_pTheiaCtx->pMmIsAddressValid(pPgApcRoutine = *(PVOID*)((PUCHAR)pPgCtx + 0xa30))) ///< LocalPgCtxBase + 0xA30: PgApcRoutine (basically KiDispatchCallout)
+                {
+                    if (!((HrdGetPteInputVa(pPgApcRoutine))->NoExecute))
+                    {
+                        DbgLog("[TheiaPg <+>] SearchPgSysThreadRoutine: Detect PgApcRoutine in PgCtx | PgApcRoutine: 0x%I64X\n\n", pPgApcRoutine);
+
+                        DataIndpnRWVMem.pVa = pPgApcRoutine;
+
+                        HrdIndpnRWVMemory(&DataIndpnRWVMem);
+                    }
+                }
+
+                //
+                // LocalPgCtxBase + 0x808: OffsetFirstRoutineCheck -> LocalPgCtxBase + OffsetFirstRoutineCheck: FirstRoutineCheck (Caller SdbpCheckDllRWX)
+                //
+                pSearchSdbpCheckDllRWX = ((PUCHAR)pPgCtx + (ULONG64)(*(PULONG32)((PUCHAR)pPgCtx + 0x808)));
+
+                for (ULONG32 j = 0UI32; ; ++j)
+                {
+                    if (((PUCHAR)pSearchSdbpCheckDllRWX)[j] == 0xCC && ((PUCHAR)pSearchSdbpCheckDllRWX)[j + 1] == 0xCC && ((PUCHAR)pSearchSdbpCheckDllRWX)[j + 2] == 0xCC)
+                    {
+                        SaveRel32Offset = *(PLONG32)((PUCHAR)pSearchSdbpCheckDllRWX + (j - 4));
+
+                        pSearchSdbpCheckDllRWX = (((ULONG64)pSearchSdbpCheckDllRWX + j) + ((SaveRel32Offset < 0I32) ? ((ULONG64)SaveRel32Offset | 0xffffffff00000000UI64) : (ULONG64)SaveRel32Offset));
+
+                        /* Skip: 488b742430 mov rsi, qword ptr [rsp+30h] */
+                        for (USHORT l = 5UI16; ; ++l)
+                        {
+                            if (((PUCHAR)pSearchSdbpCheckDllRWX)[l] == 0xff && ((PUCHAR)pSearchSdbpCheckDllRWX)[l + 1] == 0xe6) { break; }
+                            else { ((PUCHAR)pSearchSdbpCheckDllRWX)[l] = 0x90UI8; }
+                        }
+
+                        DbgLog("[TheiaPg <+>] SearchPgSysThreadRoutine: SdbpCheckDllRWX is found: 0x%I64X\n\n", pSearchSdbpCheckDllRWX);
+
+                        break;
+                    }
+                }
             }
 
-            pRetAddrsTrace[i] = pInternalCtx->Rip;
+            DbgLog("[TheiaPg <+>] SearchPgSysThreadRoutine: Enter to dead sleep... | IRQL: 0x%02X\n\n", CurrIrql);
+
+            IsSleep = TRUE;
+
+            goto Exit;
+        }
+
+        if (pPgCtx = SearchPgCtxInCtx(pInternalCtx))
+        {
+            DbgLog("[TheiaPg <+>] SearchPgSysThreadRoutine: Detect PgCtx in CpuCtx | TCB: 0x%I64X TID: 0x%hX\n", pCurrentObjThread, *pCurrentTID);
+
+            goto OtherDetects;
         }
     }
-    else { goto JmpDetectNonBackedStack; }
+
+    Exit:
 
     g_pTheiaCtx->pMmFreeIndependentPages(pInternalCtx, PAGE_SIZE, 0I64);
 
@@ -364,15 +335,13 @@ VOID InitSearchPgSysThread(VOID)
 
     CheckStatusTheiaCtx();
 
-    PKAPC_TRUE pKAPC = NULL;
-
-    PVOID pStubRoutine = BuilderWrapperApcRoutine(&SearchPgSysThreadRoutine);
+    PVOID pStubRoutine = BuildStubApcRoutine(&SearchPgSysThreadRoutine);
 
     PVOID pExceptionObjThread = (PVOID)__readgsqword(0x188UI32);
-
     PUCHAR pCurrentThreadObj = NULL;
 
-    USHORT CouterInsertedAPCs = 0UI16;
+    PKAPC_TRUE pKAPC = NULL;
+    USHORT CounterInsertedAPCs = 0UI16;
 
     if (__readcr8() > DISPATCH_LEVEL)
     {
@@ -400,16 +369,16 @@ VOID InitSearchPgSysThread(VOID)
 
                 *(PULONG32)(pCurrentThreadObj + (g_pTheiaCtx->TheiaMetaDataBlock.KTHREAD_MiscFlags_OFFSET)) |= (0x1UI32 << 14UI32); ///< ApcQueueable: ON
 
-                g_pTheiaCtx->pKeInsertQueueApc(pKAPC, IS_SAFE_KAPC_SIGNATURE, NULL, MAXIMUM_PRIORITY);
+                g_pTheiaCtx->pKeInsertQueueApc(pKAPC, IS_SAFE_APC_SIGNATURE, NULL, MAXIMUM_PRIORITY);
 
-                ++CouterInsertedAPCs;
+                ++CounterInsertedAPCs;
             }
 
             g_pTheiaCtx->pObfDereferenceObject(pCurrentThreadObj); ///< Kernel object counter decrement.
         }
     }
 
-    DbgLog("[TheiaPg <+>] InitSearchPgSysThread: APCs inserted: 0x%hX\n\n", CouterInsertedAPCs);
+    DbgLog("[TheiaPg <+>] InitSearchPgSysThread: APCs inserted: 0x%hX\n\n", CounterInsertedAPCs);
  
     return;
 }

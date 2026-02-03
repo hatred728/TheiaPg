@@ -14,7 +14,7 @@ extern CONST UCHAR _25h2_w11_Handler_KiDeliverApc[14];
 extern CONST UCHAR _25h2_w11_KiDeliverApc_SIG[];
 extern CONST UCHAR _25h2_w11_KiDeliverApc_MASK[];
 
-extern CONST UCHAR _25h2_w11_HandlerVsrExQueueWorkItem[15];
+extern CONST UCHAR _25h2_w11_HandlerVsrExQueueWorkItem[13];
 extern CONST UCHAR _25h2_w11_ExQueueWorkItem_SIG[];
 extern CONST UCHAR _25h2_w11_ExQueueWorkItem_MASK[];
 

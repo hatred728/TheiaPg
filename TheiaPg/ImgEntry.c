@@ -13,7 +13,4 @@ extern VOID TheiaEntry(VOID);
 *
 * Description: Entry-Routine TheiaPg.sys.
 --*/
-VOID ImgEntry(VOID)
-{
-    TheiaEntry();
-}
+VOID ImgEntry(VOID) { TheiaEntry(); }

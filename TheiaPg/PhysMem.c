@@ -3,7 +3,7 @@
 /*++
 * Routine: HrdIndpnRWVMemory
 * 
-* MaxIRQL: IPI_LEVEL
+* MaxIRQL: CLOCK_LEVEL
 * 
 * Public/Private: Public
 * 
@@ -21,85 +21,75 @@
 --*/
 VOID HrdIndpnRWVMemory(IN OUT PINDPN_RW_V_MEMORY_DATA pInputData)
 {	
-	//
-	// InternalCodeError HrdIndpnRWVMemory.
-	//
     #define ERROR_INPUTDATA_INVALID_V_MEMORY 0xd54812ddUI32
-
     #define ERROR_READ_V_MEMORY  0x848d7e65UI32
-
     #define ERROR_WRITE_V_MEMORY 0x0fa7049fUI32
 	
 	CheckStatusTheiaCtx();
-
-	//
-	// Execution barriers are required to implement recursive IPI (All including self) initiation.
-	//
+	
 	volatile static LONG32 SynchBarrier0 = 0I32;
-
 	volatile static LONG32 SynchBarrier1 = 0I32;
-
+	volatile static ULONG32 ActiveProcessorCount = 0UI32;
+	volatile static ULONG32 ActiveProcessorCount2 = 0UI32;
 
 	LONG32 SaveRel32Offset = 0I32;
-
 	BOOLEAN OldIF = FALSE;
-
-	UCHAR OldIrql = __readcr8();
-	
+	UCHAR CurrIrql = (UCHAR)__readcr8();
 	PMMPTE_HARDWARE pPteInputVa = NULL;
-	
 	PVOID pMetaVPage = NULL;
-	
 	PMMPTE_HARDWARE pMetaVPagePte = NULL;
-	
 	ULONG64 SizeMetaVPage = 0UI64;
-	
 	ULONG64 FilteredConstsAfterCompute[6] = { 0 }; ///< [0/1/2]: MmBase/Offset/Mask | [3]: Alligment | [4/5]: Mask/Mask
 	
 	//
 	// For bypassing MiShowBadMapper - Windows 11 25H2
 	//
 	ULONG64 SaveGlobalVarsInMiShwBadMap[2] = { 0 };
-	
 	PBOOLEAN pKdPitchDebugger = NULL;
-	
 	PULONG64 pVfRuleClasses = NULL;
 	
-
 	PVOID pResultVa = NULL;
+
+	if (SynchBarrier0 && CurrIrql != IPI_LEVEL)
+	{
+		DbgLog("[TheiaPg <->] HrdIndpnRWVMemory: Violation of execution integrity\n");
+
+		if (pInputData->FlagsExecute & MEM_INDPN_RW_READ_OP_BIT) { DieDispatchIntrnlError(ERROR_READ_V_MEMORY); }
+		else { DieDispatchIntrnlError(ERROR_WRITE_V_MEMORY); }
+	}
 
 	if (!(_interlockedbittestandset(&SynchBarrier0, 0I32)))
 	{
-		if (!pInputData || !((__readcr8() <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pInputData) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pInputData)))
+		if (!pInputData || !((CurrIrql <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pInputData) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pInputData)))
 		{
 			DbgLog("[TheiaPg <->] HrdIndpnRWVMemory: Invalid InputData\n");
 
 			DieDispatchIntrnlError(ERROR_INPUTDATA_INVALID_V_MEMORY);
 		}
 
-		if (__readcr8() > IPI_LEVEL)
+		if (CurrIrql > CLOCK_LEVEL)
 		{
-			DbgLog("[TheiaPg <->] HrdIndpnRWVMemory: Inadmissible IRQL | IRQL: 0x%02X\n", __readcr8());
+			DbgLog("[TheiaPg <->] HrdIndpnRWVMemory: Inadmissible IRQL | IRQL: 0x%02X\n", CurrIrql);
 
 			if (pInputData->FlagsExecute & MEM_INDPN_RW_READ_OP_BIT) { DieDispatchIntrnlError(ERROR_READ_V_MEMORY); }
 			else { DieDispatchIntrnlError(ERROR_WRITE_V_MEMORY); }
 		}
 
-		if (!(pInputData->FlagsExecute & 0x3UI64))
+		if ((pInputData->FlagsExecute & (MEM_INDPN_RW_READ_OP_BIT | MEM_INDPN_RW_WRITE_OP_BIT)) == (MEM_INDPN_RW_READ_OP_BIT | MEM_INDPN_RW_WRITE_OP_BIT))
 		{
 			DbgLog("[TheiaPg <->] HrdIndpnRWVMemory: Invalid FlagsExecute | FlagsExecute: 0x%I64X\n", pInputData->FlagsExecute);
 
 			if (pInputData->FlagsExecute & MEM_INDPN_RW_READ_OP_BIT) { DieDispatchIntrnlError(ERROR_READ_V_MEMORY); }
 			else { DieDispatchIntrnlError(ERROR_WRITE_V_MEMORY); }
 		}
-		else if (!pInputData->pVa || !((__readcr8() <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pInputData->pVa) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pInputData->pVa)))
+		else if (!pInputData->pVa || !((CurrIrql <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pInputData->pVa) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pInputData->pVa)))
 		{
 			DbgLog("[TheiaPg <->] HrdIndpnRWVMemory: Invalid Va\n");
 
 			if (pInputData->FlagsExecute & MEM_INDPN_RW_READ_OP_BIT) { DieDispatchIntrnlError(ERROR_READ_V_MEMORY); }
 			else { DieDispatchIntrnlError(ERROR_WRITE_V_MEMORY); }
 		}
-		else if (!pInputData->pVa || !((__readcr8() <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pInputData->pIoBuffer) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pInputData->pIoBuffer)))
+		else if (!pInputData->pIoBuffer || !((CurrIrql <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pInputData->pIoBuffer) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pInputData->pIoBuffer)))
 		{
 			DbgLog("[TheiaPg <->] HrdIndpnRWVMemory: Invalid InputBuffer\n");
 
@@ -115,25 +105,29 @@ VOID HrdIndpnRWVMemory(IN OUT PINDPN_RW_V_MEMORY_DATA pInputData)
 		}
 		else { VOID; } ///< For clarity.
 
-		if (OldIF = HrdGetIF()) { _disable(); } 
-		                                        
-		__writecr8(IPI_LEVEL);                  
-		                                        
+		ActiveProcessorCount = g_pTheiaCtx->pKeQueryActiveProcessorCountEx(ALL_PROCESSOR_GROUPS);
+
+		ActiveProcessorCount2 = ActiveProcessorCount;
+	                                                      	                                        
 		g_pTheiaCtx->pKeIpiGenericCall(&HrdIndpnRWVMemory, pInputData); 
 
-		__writecr8(OldIrql);
+		while (SynchBarrier0) { _mm_pause(); }
 
-		goto ExitForNoMainExecuter;
+		goto Exit;
 	}
 	else
 	{
 		if (OldIF = HrdGetIF()) { _disable(); }
 
+		_InterlockedDecrement(&ActiveProcessorCount);
+
+		while (ActiveProcessorCount) { _mm_pause(); }
+
 		if (_interlockedbittestandset(&SynchBarrier1,0I32))
 		{		
 			while (SynchBarrier1) { _mm_pause(); }
 
-			goto ExitForNoMainExecuter;
+			goto IpiExit;
 		}
 	}
 
@@ -243,13 +237,17 @@ VOID HrdIndpnRWVMemory(IN OUT PINDPN_RW_V_MEMORY_DATA pInputData)
 
 	g_pTheiaCtx->pMmUnmapIoSpace(pMetaVPage, SizeMetaVPage);
 
-	SynchBarrier0 = 0I32;
-
 	SynchBarrier1 = 0I32;
 
-	_mm_sfence();
+    IpiExit:
 
-ExitForNoMainExecuter:
+	_InterlockedDecrement(&ActiveProcessorCount2);
+
+	while (ActiveProcessorCount2) { _mm_pause(); }
+
+	SynchBarrier0 = 0I32;
+
+	Exit:
 
 	if (OldIF) { _enable(); }
 

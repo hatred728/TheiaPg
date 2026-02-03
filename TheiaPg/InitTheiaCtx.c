@@ -1,11 +1,9 @@
 #include "LinkHeader.h"
 
-#pragma section("INIT",read,execute)
-
 /*++
 * Routine: InitTheiaMetaDataBlock
 *
-* MaxIRQL: Any level (If IRQL > DISPATCH_LEVEL then TheiaMetaDataBlock must be NonPaged)
+* MaxIRQL: Any level
 * 
 * Public/Private: Public
 *
@@ -198,12 +196,11 @@ VOID InitTheiaMetaDataBlock(IN OUT PTHEIA_METADATA_BLOCK pTheiaMetaDataBlock)
 *
 * @param NoParams
 * 
-* Description: Is currently engaged in the initialization TheiaCtx.
+* Description: Global context initializer.
 --*/
 VOID InitTheiaContext(VOID)
 {  
     #define ERROR_INIT_THEIA_CONTEXT 0x4a9d62b5UI32
-
     #define ERROR_DOUBLE_INIT_THEIA_CONTEXT 0x62c7bf9fUI32
 
     // OtherData ==============================================================================================================================================================++
@@ -275,10 +272,8 @@ VOID InitTheiaContext(VOID)
                                                                                                                                                  
     // KiSwInterruptDispatch/MaxDataSize BlockVars =++                                                                                               
                                                     //                                                                                               
-    UCHAR IDTR[10];                                 //                                                                                           
-                                                    //                                                                                                                                           
+    UCHAR IDTR[10];                                 //                                                                                                                                                                                                                                    
     PKIDTENTRY64 pSwKIDTENTRY64 = NULL;             //                                                                                           
-                                                    //
     PVOID pKiSwInterruptDispatch = NULL;            //  
                                                     //
     LONG32 SaveRel32Offset = 0I32;                  //
@@ -294,6 +289,14 @@ VOID InitTheiaContext(VOID)
     StrKeIpiGenericCall.Length = (USHORT)((wcslen(StrKeIpiGenericCall.Buffer)) * 2);                             //
                                                                                                                  //
     StrKeIpiGenericCall.MaximumLength = (StrKeIpiGenericCall.Length + 2);                                        //
+                                                                                                                 //
+    UNICODE_STRING StrKeQueryActiveProcessorCountEx = { 0 };                                                     //
+                                                                                                                 //
+    StrKeQueryActiveProcessorCountEx.Buffer = L"KeQueryActiveProcessorCountEx";                                  //
+                                                                                                                 //
+    StrKeQueryActiveProcessorCountEx.Length = (USHORT)((wcslen(StrKeQueryActiveProcessorCountEx.Buffer)) * 2);   //
+                                                                                                                 //
+    StrKeQueryActiveProcessorCountEx.MaximumLength = (StrKeQueryActiveProcessorCountEx.Length + 2);              //
                                                                                                                  //
     UNICODE_STRING StrMmGetPhysicalAddress = { 0 };                                                              //
                                                                                                                  //
@@ -462,7 +465,6 @@ VOID InitTheiaContext(VOID)
     CONST UCHAR INIT_THEIA_CTX_KECAPTUREPERSISTENTTHREADSTATE_SUBSIG_MASK[sizeof INIT_THEIA_CTX_KECAPTUREPERSISTENTTHREADSTATE_SUBSIG] = { "xxxxxxxxxxxxxxxxxxxxxxxxxxx" }; //
                                                                                                                                                                             //
     VOID(__fastcall* pKdCopyDataBlock)(PKDDEBUGGER_DATA64 pKdDebuggerDataBlockDec);                                                                                         //
-                                                                                                                                                                            //
     PKDDEBUGGER_DATA64 pKdDebuggerDataBlockDec = NULL;                                                                                                                      //
                                                                                                                                                                             //
     // =====================================================================================================================================================================++    
@@ -705,6 +707,8 @@ VOID InitTheiaContext(VOID)
     // Initialization A4-Block
     //
     g_pTheiaCtx->pKeIpiGenericCall               = MmGetSystemRoutineAddress(&StrKeIpiGenericCall);
+
+    g_pTheiaCtx->pKeQueryActiveProcessorCountEx  = MmGetSystemRoutineAddress(&StrKeQueryActiveProcessorCountEx);
 
     g_pTheiaCtx->pMmGetPhysicalAddress           = MmGetSystemRoutineAddress(&StrMmGetPhysicalAddress);
 

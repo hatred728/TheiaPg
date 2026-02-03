@@ -737,6 +737,7 @@ typedef struct _THEIA_CONTEXT
     // A4-Block.
     //
     ULONG_PTR(__fastcall* pKeIpiGenericCall)(PVOID BroadcastFunction, ULONG_PTR Context);
+    ULONG(__fastcall*pKeQueryActiveProcessorCountEx)(USHORT GroupNumber);
     PHYSICAL_ADDRESS(__fastcall* pMmGetPhysicalAddress)(IN PVOID BaseAddress);
     PVOID(__fastcall* pMmMapIoSpaceEx)(IN PHYSICAL_ADDRESS PhysicalAddress, IN SIZE_T NumberOfBytes, ULONG Protect);
     VOID(__fastcall* pMmUnmapIoSpace)(IN PVOID BaseAddress,IN SIZE_T NumberOfBytes);

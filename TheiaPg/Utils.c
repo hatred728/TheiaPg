@@ -15,7 +15,9 @@ PVOID _HeurisSearchKdpcInCtx(IN PCONTEXT pCtx)
 {
     CheckStatusTheiaCtx();
 
-    if (!((__readcr8() <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pCtx) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pCtx)))
+    UCHAR CurrIrql = (UCHAR)__readcr8();
+
+    if (!((CurrIrql <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pCtx) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pCtx)))
     {
         DbgLog("[TheiaPg <->] HeurisSearchKdpcInCtx: Invalid Ctx\n\n");
 
@@ -26,9 +28,9 @@ PVOID _HeurisSearchKdpcInCtx(IN PCONTEXT pCtx)
 
     for (UCHAR i = 0UI8; i < 16UI8; ++i, ++pKdpc)
     {
-        if (!((__readcr8() <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid((PVOID)(*pKdpc)) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid((PVOID)(*pKdpc)))) { continue; }
+        if (!((CurrIrql <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid((PVOID)(*pKdpc)) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid((PVOID)(*pKdpc)))) { continue; }
 
-        if (((__readcr8() <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(((PKDPC)(*pKdpc))->DeferredRoutine) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(((PKDPC)(*pKdpc))->DeferredRoutine)))
+        if (((CurrIrql <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(((PKDPC)(*pKdpc))->DeferredRoutine) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(((PKDPC)(*pKdpc))->DeferredRoutine)))
         {
             if (!((HrdGetPteInputVa(((PKDPC)(*pKdpc))->DeferredRoutine))->NoExecute)) { return *pKdpc; }
         }
@@ -66,6 +68,7 @@ BOOLEAN _IsSafeAddress(IN PVOID pCheckAddress)
     do
     {
         if ((pCheckAddress >= pCurrentNode->DllBase) && (pCheckAddress <= (((PUCHAR)pCurrentNode->DllBase) + pCurrentNode->SizeOfImage))) { return TRUE; }
+
         else { pCurrentNode = pCurrentNode->InLoadOrderLinks.Flink; }
 
     } while (pCurrentNode != PsLoadedModuleList);
@@ -78,9 +81,7 @@ volatile PVOID g_pSpiiNonLargePage = NULL;
 /*++
 * Routine: _SearchPatternInImg
 *
-* MaxIRQL: SPII_NO_OPTIONAL:               IRQL any level
-*          SPII_GET_BASE_MODULE:           IRQL any level (If IRQL > DISPATCH_LEVEL then the input addresses must be NonPaged)
-*          SPII_SCAN_CALLER_INPUT_ADDRESS: IRQL any level (If IRQL > DISPATCH_LEVEL then the input addresses must be NonPaged)
+* MaxIRQL: Any level
 * 
 * Public/Private: Public
 *
@@ -106,39 +107,31 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
 
     #define SPII_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID 1
 
+    LONG32 SaveRel32Offset = 0I32;
+    UCHAR CurrIrql = (UCHAR)__readcr8();
+
     PVOID(__fastcall *SpiiCtx[2])(PVOID, ...) = { 0 }; ///< Routine is critical, so it should not depend on gTheiaCtx.
 
     PTHEIA_METADATA_BLOCK pLocalTMDB = g_pSpiiNonLargePage;
-
     BOOLEAN IsLocalCtx = FALSE;
 
     UNICODE_STRING StrMmIsAddressValid = { 0 };
-
     UNICODE_STRING StrMmIsNonPagedSystemAddressValid = { 0 };
 
+    USHORT LengthModuleName = 0UI16;
     USHORT LenSIG = 0UI16;
 
     ULONG64 Cr3User = 0UI64;
-
     ULONG64 Cr3Kernel = __readcr3();
 
+    PVOID pCurrentLdr = NULL;
+    PVOID pDummyLdr = NULL;
     PVOID pBaseAddrModule = NULL;
 
-    PVOID pDummyLdr = NULL;
-
-    PVOID pCurrentLdr = NULL;
-
-    USHORT LengthModuleName = 0UI16;
-
     USHORT SizeOfOptionalHeaderNT = 0UI16;
-
     USHORT NumberOfSectionsNT = 0UI16;
-
     PIMAGE_SECTION_HEADER pCurrentSectionHeader = NULL;
-
     PUCHAR pBaseAddrExeRegion = NULL;
-
-    LONG32 SaveRel32Offset = 0I32;
 
     UCHAR AccessMode = KernelMode; ///< UserMode-TablePages + KVAShadowing: not working.
 
@@ -153,7 +146,7 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
         {
             DbgLog("[TheiaPg <->] DieDispatchIntrnlError: Page for LocalTMDB is not allocate\n");
 
-            goto ExitJmp;
+            goto Exit;
         }
 
         InitTheiaMetaDataBlock(pLocalTMDB);
@@ -181,36 +174,36 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
         {
             DbgLog("[TheiaPg <->] _SearchPatternInImg: Incorrect combination FlagsExecute | FlagsExecute: 0x%I32X\n", FlagsExecute);
 
-            goto ExitJmp;
+            goto Exit;
         }
         else if (!OptionalData[SPII_INDEX_OPTIONAL_DATA_SCIA] ||
-                 !((__readcr8() <= DISPATCH_LEVEL) ? 
+                 !((CurrIrql <= DISPATCH_LEVEL) ?
                  (IsLocalCtx ? SpiiCtx[SPII_LOCAL_CONTEXT_MMISADDRESSVALID] : g_pTheiaCtx->pMmIsAddressValid)(OptionalData[SPII_INDEX_OPTIONAL_DATA_SCIA]) :
                  (IsLocalCtx ? SpiiCtx[SPII_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID] : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid)(OptionalData[SPII_INDEX_OPTIONAL_DATA_SCIA])))
         {
             DbgLog("[TheiaPg <->] _SearchPatternInImg: Invalid SCIA address | FlagsExecute: 0x%I32X\n", FlagsExecute);
 
-            goto ExitJmp;
+            goto Exit;
         }
         else if (!pEprocessTrgtImg || !(IsLocalCtx ? SpiiCtx[SPII_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID] : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid)(pEprocessTrgtImg))
         {
             DbgLog("[TheiaPg <->] _SearchPatternInImg: Invalid VA EprocessTrgtImg\n");
 
-            goto ExitJmp;
+            goto Exit;
         }
-        else if (!pNameSection || !((__readcr8() <= DISPATCH_LEVEL) ?
+        else if (!pNameSection || !((CurrIrql <= DISPATCH_LEVEL) ?
                  (IsLocalCtx ? SpiiCtx[SPII_LOCAL_CONTEXT_MMISADDRESSVALID] : g_pTheiaCtx->pMmIsAddressValid)(pNameSection) :
                  (IsLocalCtx ? SpiiCtx[SPII_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID] : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid)(pNameSection)))
         {
             DbgLog("[TheiaPg <->] _SearchPatternInImg: Invalid NameSection | FlagsExecute: 0x%I32X\n", FlagsExecute);
 
-            goto ExitJmp;
+            goto Exit;
         }
         else if (pSig || pMaskSig)
         {
             DbgLog("[TheiaPg <->] _SearchPatternInImg: Incorrect combination flag SPII_SCAN_CALLER_INPUT_ADDRESS with (Sig || MaskSig) | FlagsExecute: 0x%I32X\n", FlagsExecute);
 
-            goto ExitJmp;
+            goto Exit;
         }
         else { VOID; } ///< For clarity.     
     }
@@ -220,19 +213,19 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
         {
             DbgLog("[TheiaPg <->] _SearchPatternInImg: Incorrect combination FlagsExecute | FlagsExecute: 0x%I32X\n", FlagsExecute);
 
-            goto ExitJmp;
+            goto Exit;
         }
         else if (!pEprocessTrgtImg || !(IsLocalCtx ? SpiiCtx[SPII_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID] : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid)(pEprocessTrgtImg))
         {
             DbgLog("[TheiaPg <->] _SearchPatternInImg: Invalid VA EprocessTrgtImg\n");
 
-            goto ExitJmp;
+            goto Exit;
         }
         else if (pNameSection)
         {
             DbgLog("[TheiaPg <->] _SearchPatternInImg: Incorrect combination flag SPII_GET_BASE_MODULE with NameSection\n");
 
-            goto ExitJmp;
+            goto Exit;
         }
         else if (pSig || pMaskSig)
         {
@@ -242,44 +235,44 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
     }
     else if (FlagsExecute & SPII_NO_OPTIONAL)
     {
-        if (__readcr8() > DISPATCH_LEVEL)
+        if (CurrIrql > DISPATCH_LEVEL)
         {
-            DbgLog("[TheiaPg <->] _SearchPatternInImg: Inadmissible IRQL | FlagsExecute: 0x%I32X | IRQL: 0x%02X\n", FlagsExecute, __readcr8());
+            DbgLog("[TheiaPg <->] _SearchPatternInImg: Inadmissible IRQL | FlagsExecute: 0x%I32X | IRQL: 0x%02X\n", FlagsExecute, CurrIrql);
 
-            goto ExitJmp;
+            goto Exit;
         }
 
         if (FlagsExecute & SPII_NO_OPTIONAL && (FlagsExecute & SPII_GET_BASE_MODULE || FlagsExecute & SPII_SCAN_CALLER_INPUT_ADDRESS))
         {
             DbgLog("[TheiaPg <->] _SearchPatternInImg: Incorrect combination FlagsExecute | FlagsExecute: 0x%I32X\n", FlagsExecute);
 
-            goto ExitJmp;
+            goto Exit;
         }
         else if (!pEprocessTrgtImg || !(IsLocalCtx ? SpiiCtx[SPII_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID] : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid)(pEprocessTrgtImg))
         {
             DbgLog("[TheiaPg <->] _SearchPatternInImg: Invalid VA EprocessTrgtImg\n");
 
-            goto ExitJmp;
+            goto Exit;
         }
-        else if (!pNameSection || !((__readcr8() <= DISPATCH_LEVEL) ? 
+        else if (!pNameSection || !((CurrIrql <= DISPATCH_LEVEL) ?
                  (IsLocalCtx ? SpiiCtx[SPII_LOCAL_CONTEXT_MMISADDRESSVALID] : g_pTheiaCtx->pMmIsAddressValid)(pNameSection) :
                  (IsLocalCtx ? SpiiCtx[SPII_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID] : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid)(pNameSection)))
         {
             DbgLog("[TheiaPg <->] _SearchPatternInImg: Invalid VA NameSection\n");
 
-            goto ExitJmp;
+            goto Exit;
         }
-        else if ((!pSig || !((__readcr8() <= DISPATCH_LEVEL) ? 
+        else if ((!pSig || !((CurrIrql <= DISPATCH_LEVEL) ?
                  (IsLocalCtx ? SpiiCtx[SPII_LOCAL_CONTEXT_MMISADDRESSVALID] : g_pTheiaCtx->pMmIsAddressValid)(pSig) :
                  (IsLocalCtx ? SpiiCtx[SPII_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID] : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid)(pSig)))
                                            ||
-                 (!pMaskSig || !((__readcr8() <= DISPATCH_LEVEL) ?
+                 (!pMaskSig || !((CurrIrql <= DISPATCH_LEVEL) ?
                  (IsLocalCtx ? SpiiCtx[SPII_LOCAL_CONTEXT_MMISADDRESSVALID] : g_pTheiaCtx->pMmIsAddressValid)(pMaskSig) :
                  (IsLocalCtx ? SpiiCtx[SPII_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID] : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid)(pMaskSig))))
         {
             DbgLog("[TheiaPg <->] _SearchPatternInImg: Invalid VA Sig/MaskSig\n");
 
-            goto ExitJmp;
+            goto Exit;
         }
         else { VOID; } ///< For clarity.
 
@@ -287,14 +280,14 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
         {
             DbgLog("[TheiaPg <->] _SearchPatternInImg: Length Sig/Mask is NULL\n");
 
-            goto ExitJmp;
+            goto Exit;
         }
     }
     else
     {
         DbgLog("[TheiaPg <->] _SearchPatternInImg: Unknown FlagsExecute | FlagsExecute: 0x%I32X\n", FlagsExecute);
 
-        goto ExitJmp;
+        goto Exit;
     }
   
     if (*((PVOID*)((PUCHAR)pEprocessTrgtImg + (IsLocalCtx ? pLocalTMDB->EPROCESS_Peb_OFFSET : g_pTheiaCtx->TheiaMetaDataBlock.EPROCESS_Peb_OFFSET))))
@@ -318,7 +311,7 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
         {
             DbgLog("[TheiaPg <->] _SearchPatternInImg: Invalid VA ModuleName\n");
 
-            goto ExitJmp;
+            goto Exit;
         }
 
         LengthModuleName = strlen(pModuleName);
@@ -327,7 +320,7 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
         {
             DbgLog("[TheiaPg <->] _SearchPatternInImg: Incorrect length ModuleName\n");
 
-            goto ExitJmp;
+            goto Exit;
         }
 
         if (!AccessMode)
@@ -353,7 +346,7 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
                 {
                     pCurrentLdr = *(PVOID*)pCurrentLdr;
 
-                    goto continue0;
+                    goto Continue0;
                 }
             }
 
@@ -361,7 +354,7 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
          
             if (!(FlagsExecute & SPII_GET_BASE_MODULE))
             { 
-                goto NoRetBaseAddrModule; 
+                goto NoReturnBaseAddrModule;
             }
             else
             {
@@ -375,13 +368,13 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
                 return pBaseAddrModule;
             }
 
-            continue0: continue;
+            Continue0: continue;
 
         } while (pCurrentLdr != pDummyLdr);
 
         DbgLog("[TheiaPg <->] _SearchPatternInImg: Base address module %s not found\n", (PUCHAR)pModuleName);
 
-        goto ExitJmp;
+        goto Exit;
     }
     else
     {
@@ -413,7 +406,7 @@ PVOID _SearchPatternInImg(IN ULONG64 OptionalData[SPII_AMOUNT_OPTIONAL_DATA], IN
         }
     }
 
-NoRetBaseAddrModule:
+    NoReturnBaseAddrModule:
   
     if (((PIMAGE_DOS_HEADER)pBaseAddrModule)->e_magic == 0x5a4dUI16)
     {
@@ -428,14 +421,14 @@ NoRetBaseAddrModule:
         {
             DbgLog("[TheiaPg <->] _SearchPatternInImg: NT signature not found\n");
 
-            goto ExitJmp;
+            goto Exit;
         }
     }
     else
     {
         DbgLog("[TheiaPg <->] _SearchPatternInImg: MZ signature not found\n");
 
-        goto ExitJmp;
+        goto Exit;
     }
 
     for (ULONG32 i = 0UI32; ; ++i, (((PUCHAR)pCurrentSectionHeader) += 0x28))
@@ -448,10 +441,10 @@ NoRetBaseAddrModule:
                 {
                     DbgLog("[TheiaPg <->] _SearchPatternInImg: section %s not found\n", ((PUCHAR)pNameSection));
 
-                    goto ExitJmp;
+                    goto Exit;
                 }
 
-                goto continue1;
+                goto Continue1;
             }
         }
 
@@ -459,7 +452,7 @@ NoRetBaseAddrModule:
 
         break;
 
-        continue1: continue;
+        Continue1: continue;
     }
 
 
@@ -491,14 +484,14 @@ NoRetBaseAddrModule:
                 {
                     if (pBaseAddrExeRegion[l] != ((PUCHAR)pSig)[l])
                     {
-                        goto continue2;
+                        goto Continue2;
                     }
                 }
             }
 
             pResultVa = pBaseAddrExeRegion;
 
-            goto ExitJmp;
+            goto Exit;
         }
         else if (FlagsExecute & SPII_SCAN_CALLER_INPUT_ADDRESS)
         {
@@ -512,16 +505,16 @@ NoRetBaseAddrModule:
                 {
                     pResultVa = pBaseAddrExeRegion;
 
-                    goto ExitJmp;
+                    goto Exit;
                 }
             }
         }
         else { VOID; } ///< For clarity.      
 
-      continue2: continue;
+      Continue2: continue;
     }
 
-ExitJmp:
+    Exit:
 
     if (AccessMode)
     {
@@ -538,7 +531,7 @@ ExitJmp:
 /*++
 * Routine: _SearchPatternInRegion
 *
-* MaxIRQL: Any level (If IRQL > DISPATCH_LEVEL then the input addresses must be NonPaged)
+* MaxIRQL: Any level
 *
 * Public/Private: Public
 *
@@ -561,23 +554,20 @@ ExitJmp:
 PVOID _SearchPatternInRegion(IN ULONG64 OptionalData[SPIR_AMOUNT_OPTIONAL_DATA], IN ULONG32 FlagsExecute, IN PUCHAR pRegionSearch, IN PUCHAR pSig, IN PUCHAR pMaskSig, IN PUCHAR pStopSig, IN ULONG32 LenStopSig)
 {
     #define SPIR_LOCAL_CONTEXT_MMISADDRESSVALID 0
-
     #define SPIR_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID 1
 
-    PVOID(__fastcall *SpirCtx[2])(PVOID,...) = { 0 }; ///< Routine is critical, so it should not depend on gTheiaCtx.
+    LONG32 SaveRel32Offset = 0I32;
+    UCHAR CurrIrql = (UCHAR)__readcr8();
 
+    PVOID(__fastcall *SpirCtx[2])(PVOID,...) = { 0 }; ///< Routine is critical, so it should not depend on gTheiaCtx.
     BOOLEAN IsLocalCtx = FALSE;
 
     UNICODE_STRING StrMmIsAddressValid = { 0 };
-
     UNICODE_STRING StrMmIsNonPagedSystemAddressValid = { 0 };
-
-    LONG32 SaveRel32Offset = 0I32;
 
     ULONG64 LengthSig = 0UI64;
 
     BOOLEAN StopFlag = TRUE;
-
     BOOLEAN StopHit = FALSE;
 
     PVOID pResultVa = NULL;
@@ -604,63 +594,63 @@ PVOID _SearchPatternInRegion(IN ULONG64 OptionalData[SPIR_AMOUNT_OPTIONAL_DATA],
         SpirCtx[SPIR_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID] = MmGetSystemRoutineAddress(&StrMmIsNonPagedSystemAddressValid);
     }
 
-    if (!pRegionSearch || !((__readcr8() <= DISPATCH_LEVEL) ? 
+    if (!pRegionSearch || !((CurrIrql <= DISPATCH_LEVEL) ?
         (IsLocalCtx ? SpirCtx[SPII_LOCAL_CONTEXT_MMISADDRESSVALID] : g_pTheiaCtx->pMmIsAddressValid)(pRegionSearch) :
         (IsLocalCtx ? SpirCtx[SPIR_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID] : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid)(pRegionSearch)))
     {
         DbgLog("[TheiaPg <->] _SearchPatternInRegion: Invalid RegionSearch\n");
 
-        goto ExitJmp;
+        goto Exit;
     }
 
     if (FlagsExecute & SPIR_NO_OPTIONAL)
     {
-        if ((!pSig || !((__readcr8() <= DISPATCH_LEVEL) ? 
+        if ((!pSig || !((CurrIrql <= DISPATCH_LEVEL) ?
             (IsLocalCtx ? SpirCtx[SPII_LOCAL_CONTEXT_MMISADDRESSVALID] : g_pTheiaCtx->pMmIsAddressValid)(pSig) :
             (IsLocalCtx ? SpirCtx[SPIR_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID] : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid)(pSig)))
                                       || 
-            (!pMaskSig || !((__readcr8() <= DISPATCH_LEVEL) ? 
+            (!pMaskSig || !((CurrIrql <= DISPATCH_LEVEL) ?
             (IsLocalCtx ? SpirCtx[SPII_LOCAL_CONTEXT_MMISADDRESSVALID] : g_pTheiaCtx->pMmIsAddressValid)(pMaskSig) :
             (IsLocalCtx ? SpirCtx[SPIR_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID] : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid)(pMaskSig))))
         {
             DbgLog("[TheiaPg <->] _SearchPatternInRegion: Invalid Sig/MaskSig\n");
 
-            goto ExitJmp;
+            goto Exit;
         }
 
         LengthSig = strlen(pMaskSig);
     }
     else if (FlagsExecute & SPIR_SCAN_CALLER_INPUT_ADDRESS)
     {
-        if (!OptionalData[SPIR_INDEX_OPTIONAL_DATA_SCIA] || !((__readcr8() <= DISPATCH_LEVEL) ?
+        if (!OptionalData[SPIR_INDEX_OPTIONAL_DATA_SCIA] || !((CurrIrql <= DISPATCH_LEVEL) ?
             (IsLocalCtx ? SpirCtx[SPII_LOCAL_CONTEXT_MMISADDRESSVALID] : g_pTheiaCtx->pMmIsAddressValid)(OptionalData[SPIR_INDEX_OPTIONAL_DATA_SCIA]) :
             (IsLocalCtx ? SpirCtx[SPIR_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID] : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid)(OptionalData[SPIR_INDEX_OPTIONAL_DATA_SCIA])))
         {
             DbgLog("[TheiaPg <->] _SearchPatternInRegion: Invalid address SPIR_SCAN_CALLER_INPUT_ADDRESS\n");
 
-            goto ExitJmp;
+            goto Exit;
         }
         else if (pSig || pMaskSig)
         {
             DbgLog("[TheiaPg <->] _SearchPatternInRegion: Combination SPIR_SCAN_CALLER_INPUT_ADDRESS with Sig/Mask\n");
 
-            goto ExitJmp;
+            goto Exit;
         }
     }
     else
     {
         DbgLog("[TheiaPg <->] _SearchPatternInRegion: Unknown FlagsExecute | FlagsExecute: 0x%I32X\n", FlagsExecute);
 
-        goto ExitJmp;
+        goto Exit;
     }
 
-    if (!LenStopSig || !((__readcr8() <= DISPATCH_LEVEL) ? 
+    if (!LenStopSig || !((CurrIrql <= DISPATCH_LEVEL) ?
         (IsLocalCtx ? SpirCtx[SPII_LOCAL_CONTEXT_MMISADDRESSVALID] : g_pTheiaCtx->pMmIsAddressValid)(pStopSig) :
         (IsLocalCtx ? SpirCtx[SPIR_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID] : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid)(pStopSig)))
     {
         DbgLog("[TheiaPg <->] _SearchPatternInRegion: Invalid StopSig/LenStopSig\n");
 
-        goto ExitJmp;
+        goto Exit;
     }
 
     for(; ; ++pRegionSearch)
@@ -680,14 +670,14 @@ PVOID _SearchPatternInRegion(IN ULONG64 OptionalData[SPIR_AMOUNT_OPTIONAL_DATA],
                 {
                     if (pSig[i] != pRegionSearch[i])
                     {
-                        goto continue0;
+                        goto Continue0;
                     }
                 }
             }
 
             pResultVa = pRegionSearch;
 
-            goto ExitJmp;
+            goto Exit;
         }
         else if (FlagsExecute & SPIR_SCAN_CALLER_INPUT_ADDRESS)
         {
@@ -699,16 +689,16 @@ PVOID _SearchPatternInRegion(IN ULONG64 OptionalData[SPIR_AMOUNT_OPTIONAL_DATA],
                 {
                     pResultVa = pRegionSearch;
 
-                    goto ExitJmp;
+                    goto Exit;
                 }
             }
         }
         else { VOID; } ///< For clarity.
 
-     continue0: continue;
+      Continue0: continue;
     }
 
-ExitJmp:
+    Exit:
 
     if (StopHit) { DbgLog("[TheiaPg <->] _SearchPatternInRegion: StopHit is TRUE\n"); }
 

@@ -59,9 +59,6 @@
     <Filter Include="Source Files\_TheiaPg\__Hardware\_asm\Stacx64">
       <UniqueIdentifier>{75e48972-901b-4a50-914f-5a02336839cb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\_TheiaPg\InitCallTrmpln">
-      <UniqueIdentifier>{1135c96c-c8c8-4ac8-9823-a90ea5de5972}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\_TheiaPg\_TheiaCore">
       <UniqueIdentifier>{d56ee18a-80dd-41cd-ba06-b1a9a5ceec3e}</UniqueIdentifier>
     </Filter>
@@ -83,6 +80,9 @@
     <Filter Include="Source Files\_TheiaPg\__Hardware\_asm\Voidx64">
       <UniqueIdentifier>{b3b9e10c-3de4-49ba-aea8-beade25e6e3a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\_TheiaPg\CallTrmpln">
+      <UniqueIdentifier>{1135c96c-c8c8-4ac8-9823-a90ea5de5972}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImgEntry.c">
@@ -97,8 +97,8 @@
     <ClCompile Include="Utils.c">
       <Filter>Source Files\Common\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="InitCallTrmpln.c">
-      <Filter>Source Files\_TheiaPg\InitCallTrmpln</Filter>
+    <ClCompile Include="CallTrmpln.c">
+      <Filter>Source Files\_TheiaPg\CallTrmpln</Filter>
     </ClCompile>
     <ClCompile Include="PgSysThreads.c">
       <Filter>Source Files\_TheiaPg\_TheiaCore\PgSysThreads</Filter>
@@ -135,8 +135,8 @@
     <ClInclude Include="Utils.h">
       <Filter>Source Files\Common\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="InitCallTrmpln.h">
-      <Filter>Source Files\_TheiaPg\InitCallTrmpln</Filter>
+    <ClInclude Include="CallTrmpln.h">
+      <Filter>Source Files\_TheiaPg\CallTrmpln</Filter>
     </ClInclude>
     <ClInclude Include="PgSysThreads.h">
       <Filter>Source Files\_TheiaPg\_TheiaCore\PgSysThreads</Filter>

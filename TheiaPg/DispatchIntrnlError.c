@@ -22,24 +22,20 @@ volatile PVOID g_pDieNonLargePage = NULL;
 DECLSPEC_NORETURN VOID DieDispatchIntrnlError(IN ULONG32 InternalCode)
 {
     #define DIE_LOCAL_CONTEXT_IOCANCELIRP 0
-
     #define DIE_LOCAL_CONTEXT_KEBUGCHECKEX 1
+
+	CONST UCHAR StopSigSPIR[] = { 0xcc,0xcc,0xcc };
 
 	static volatile ULONG32 SynchBarrier0 = 0I32; ///< FixRaceCall.
 
 	PVOID DieCtx[2] = { 0 }; ///< DieRoutine is critical, so it should not depend on gTheiaCtx.
-
 	PTHEIA_METADATA_BLOCK pLocalTMDB = g_pDieNonLargePage;
-
 	BOOLEAN IsLocalCtx = FALSE;
 
 	UNICODE_STRING StrIoCancelIrp = { 0 };
-
 	UNICODE_STRING StrKeBugCheckEx = { 0 };
 
 	ULONG64 RelatedDataSPIR[4] = { 0 };
-
-	CONST UCHAR StopSigSPIR[] = { 0xCC,0xCC,0xCC };
 
 	if (!(_interlockedbittestandset(&SynchBarrier0, 0I32)))
 	{

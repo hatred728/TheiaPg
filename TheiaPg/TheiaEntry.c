@@ -15,68 +15,48 @@ VOID TheiaEntry(VOID)
 {
     #define ERROR_THEIA_ENTRY 0xd1baa81aUI32
 
-    CONST UCHAR RetOpcode = 0xC3UI8;
-  
-    CONST UCHAR StopSig[3] = { 0xCC,0xCC,0xCC };
+    CONST UCHAR RetOpcode = 0xc3UI8;
+    CONST UCHAR StopSig[3] = { 0xcc,0xcc,0xcc };
 
     ICT_DATA_RELATED RelatedDataICT = { 0 };
 
     INDPN_RW_V_MEMORY_DATA DataIndpnRWVMem = { 0 };
-
     DataIndpnRWVMem.FlagsExecute = MEM_INDPN_RW_WRITE_OP_BIT;
-
     DataIndpnRWVMem.pIoBuffer = &RetOpcode;
-
     DataIndpnRWVMem.LengthRW = 1UI64;
 
     InitTheiaContext();
 
     DataIndpnRWVMem.pVa = g_pTheiaCtx->pKiMcaDeferredRecoveryService;
-    
-    DbgLog("[TheiaPg <+>] TheiaEntry: FixKiMcaDeferredRecoveryService\n");
-    
+    DbgLog("[TheiaPg <+>] TheiaEntry: FixKiMcaDeferredRecoveryService\n"); 
     HrdIndpnRWVMemory(&DataIndpnRWVMem);
     
     DataIndpnRWVMem.pVa = g_pTheiaCtx->pFsRtlUninitializeSmallMcb;
-
     DbgLog("[TheiaPg <+>] TheiaEntry: FixFsRtlUninitializeSmallMcb\n");
-
     HrdIndpnRWVMemory(&DataIndpnRWVMem);
 
     DataIndpnRWVMem.pVa = g_pTheiaCtx->pFsRtlTruncateSmallMcb;
-    
-    DbgLog("[TheiaPg <+>] TheiaEntry: FixFsRtlTruncateSmallMcb\n");
-    
+    DbgLog("[TheiaPg <+>] TheiaEntry: FixFsRtlTruncateSmallMcb\n");  
     HrdIndpnRWVMemory(&DataIndpnRWVMem);
     
-    DataIndpnRWVMem.pVa = g_pTheiaCtx->pKiDecodeMcaFault;
-    
-    DbgLog("[TheiaPg <+>] TheiaEntry: FixKiDecodeMcaFault\n");
-    
+    DataIndpnRWVMem.pVa = g_pTheiaCtx->pKiDecodeMcaFault;  
+    DbgLog("[TheiaPg <+>] TheiaEntry: FixKiDecodeMcaFault\n");  
     HrdIndpnRWVMemory(&DataIndpnRWVMem);
     
-    DataIndpnRWVMem.pVa = g_pTheiaCtx->pCcBcbProfiler;
-    
-    DbgLog("[TheiaPg <+>] TheiaEntry: FixCcBcbProfiler\n");
-    
+    DataIndpnRWVMem.pVa = g_pTheiaCtx->pCcBcbProfiler;  
+    DbgLog("[TheiaPg <+>] TheiaEntry: FixCcBcbProfiler\n");  
     HrdIndpnRWVMemory(&DataIndpnRWVMem);
     
     DataIndpnRWVMem.pVa = g_pTheiaCtx->pCcBcbProfiler2;
-    
     DbgLog("[TheiaPg <+>] TheiaEntry: FixCcBcbProfiler2\n");
-    
     HrdIndpnRWVMemory(&DataIndpnRWVMem);
     
     DataIndpnRWVMem.pVa = g_pTheiaCtx->pKiDispatchCallout;
-    
     DbgLog("[TheiaPg <+>] TheiaEntry: FixKiDispatchCallout\n");
-    
     HrdIndpnRWVMemory(&DataIndpnRWVMem);
     
     DataIndpnRWVMem.pVa = g_pTheiaCtx->pKiSwInterruptDispatch;
-    
-    DbgLog("[TheiaPg <+>] TheiaEntry: FixKiSwInterruptDispatch\n");
-    
+    DbgLog("[TheiaPg <+>] TheiaEntry: FixKiSwInterruptDispatch\n"); 
     HrdIndpnRWVMemory(&DataIndpnRWVMem);
     
     DbgLog("[TheiaPg <+>] TheiaEntry: FixgMaxDataSize\n");
@@ -183,10 +163,10 @@ VOID TheiaEntry(VOID)
     RelatedDataICT.LengthHandler = g_pTheiaCtx->TheiaMetaDataBlock.KIEXECUTEALLDPCS_LEN_HANDLER;
     RelatedDataICT.LengthAlignment = g_pTheiaCtx->TheiaMetaDataBlock.KIEXECUTEALLDPCS_HOOK_ALIGNMENT;
     
-    HkInitCallTrmpln(&RelatedDataICT);
+    InitCallTrmpln(&RelatedDataICT);
     
     DbgLog("[TheiaPg <+>] TheiaEntry: VsrKiExecuteAllDpcs is init\n");
-    
+  
     RelatedDataICT.pHookRoutine = &VsrKiRetireDpcList;
     RelatedDataICT.pBasePatch = _SearchPatternInRegion(NULL, SPIR_NO_OPTIONAL, g_pTheiaCtx->pKiRetireDpcList, g_pTheiaCtx->TheiaMetaDataBlock.KIRETIREDPCLIST_SIG, g_pTheiaCtx->TheiaMetaDataBlock.KIRETIREDPCLIST_MASK, &StopSig, sizeof StopSig);
     
@@ -201,7 +181,7 @@ VOID TheiaEntry(VOID)
     RelatedDataICT.LengthHandler = g_pTheiaCtx->TheiaMetaDataBlock.KIRETIREDPCLIST_LEN_HANDLER;
     RelatedDataICT.LengthAlignment = g_pTheiaCtx->TheiaMetaDataBlock.KIRETIREDPCLIST_HOOK_ALIGNMENT;
     
-    HkInitCallTrmpln(&RelatedDataICT);
+    InitCallTrmpln(&RelatedDataICT);
     
     DbgLog("[TheiaPg <+>] TheiaEntry: VsrKiRetireDpcList is init\n");
 
@@ -219,7 +199,7 @@ VOID TheiaEntry(VOID)
     RelatedDataICT.LengthHandler = g_pTheiaCtx->TheiaMetaDataBlock.KIDELIVERAPC_LEN_HANDLER;
     RelatedDataICT.LengthAlignment = g_pTheiaCtx->TheiaMetaDataBlock.KIDELIVERAPC_HOOK_ALIGNMENT;
 
-    HkInitCallTrmpln(&RelatedDataICT);
+    InitCallTrmpln(&RelatedDataICT);
 
     DbgLog("[TheiaPg <+>] TheiaEntry: VsrKiDeliverApc is init\n");
 
@@ -237,7 +217,7 @@ VOID TheiaEntry(VOID)
     RelatedDataICT.LengthHandler = g_pTheiaCtx->TheiaMetaDataBlock.EXQUEUEWORKITEM_LEN_HANDLER;
     RelatedDataICT.LengthAlignment = g_pTheiaCtx->TheiaMetaDataBlock.EXQUEUEWORKITEM_HOOK_ALIGNMENT;
 
-    HkInitCallTrmpln(&RelatedDataICT);
+    InitCallTrmpln(&RelatedDataICT);
 
     DbgLog("[TheiaPg <+>] TheiaEntry: VsrExQueueWorkItem is init\n");
 
@@ -255,10 +235,10 @@ VOID TheiaEntry(VOID)
     RelatedDataICT.LengthHandler = g_pTheiaCtx->TheiaMetaDataBlock.EXALLOCATEPOOL2_LEN_HANDLER;
     RelatedDataICT.LengthAlignment = g_pTheiaCtx->TheiaMetaDataBlock.EXALLOCATEPOOL2_HOOK_ALIGNMENT;
     
-    HkInitCallTrmpln(&RelatedDataICT);
+    InitCallTrmpln(&RelatedDataICT);
     
     DbgLog("[TheiaPg <+>] TheiaEntry: VsrExAllocatePool2 is init\n");
-    
+ 
     do
     {
         LONG32 SaveRel32Offset = 0I32;
@@ -294,7 +274,7 @@ VOID TheiaEntry(VOID)
                 pCurrentRecurseRoutine = (PVOID)(((ULONG64)pCurrentRecurseRoutine + 13) + ((SaveRel32Offset < 0I32) ? ((ULONG64)SaveRel32Offset | 0xffffffff00000000UI64) : (ULONG64)SaveRel32Offset));
             }
     
-            HkInitCallTrmpln(&RelatedDataICT);
+            InitCallTrmpln(&RelatedDataICT);
         };
     
         DbgLog("[TheiaPg <+>] TheiaEntry: VsrKiCustomRecurseRoutineX is init\n\n");

@@ -55,24 +55,22 @@ CONST UCHAR _25h2_w11_KiDeliverApc_MASK[sizeof _25h2_w11_KiDeliverApc_SIG] = { "
 
 CONST UCHAR _25h2_w11_HandlerVsrExQueueWorkItem[] =
 {
-  0x50,                                     // push    rax
-  0x48, 0xB8, 0x00, 0x00, 0x00, 0x00,       // mov     rax, 0FFFF800000000000h
-  0x00, 0x80, 0xFF, 0xFF,
-  0x4C, 0x3B, 0xC8,                         // cmp     r9, rax
-  0x58                                      // pop     rax
+  0x48, 0xb8, 0x00, 0x00, 0x00, 0x00,       // mov     rax, 0FFFF800000000000h
+  0x00, 0x80, 0xff, 0xff,
+  0x4c, 0x3b, 0xc8,                         // cmp     r9, rax
 };
 CONST UCHAR _25h2_w11_ExQueueWorkItem_SIG[] = ///< For hook.
 {
   0x48, 0xB8, 0x00, 0x00, 0x00, 0x00,       // mov     rax, 0FFFF800000000000h
-  0x00, 0x80, 0xFF, 0xFF,
-  0x4C, 0x3B, 0xC8                          // cmp     r9, rax
+  0x00, 0x80, 0xff, 0xff,
+  0x4c, 0x3b, 0xc8                          // cmp     r9, rax
 };
 CONST UCHAR _25h2_w11_ExQueueWorkItem_MASK[sizeof _25h2_w11_ExQueueWorkItem_SIG] = { "xxxxxxxxxxxxx" };
 
 
 CONST UCHAR _25h2_w11_HandlerVsrExAllocatePool2[] =
 {
-  0x48, 0x83, 0xc4, 0x10,                   // add     rsp, 010h
+  0x48, 0x83, 0xc4, 0x18,                   // add     rsp, 018h
   0x41, 0x5f,                               // pop     r15
   0x41, 0x5e,                               // pop     r14 
   0x41, 0x5d,                               // pop     r13

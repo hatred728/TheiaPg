@@ -1,7 +1,7 @@
 #include "LinkHeader.h"
 
 /*++
-* Routine: HkBuilderWrapperCallTrmpln
+* Routine: BuildStubCallTrmpln
 *
 * MaxIRQL: DISPATCH_LEVEL
 *
@@ -12,11 +12,11 @@
 * Description: Important for kernel module mapping support,
 * without wrapper Stack-Unwind will not be able to correctly working without kernel routine access to the kernel module .pdata.
 --*/
-static PVOID HkBuilderWrapperCallTrmpln(IN PICT_DATA_RELATED pRelatedDataICT)
+static PVOID BuildStubCallTrmpln(IN PICT_DATA_RELATED pRelatedDataICT)
 {
     #define ERROR_BUILD_STUB_CALL_TRMPLN 0x8eabcf40I32
 
-    UCHAR CoreWrapperCall[] =
+    UCHAR CoreStubCall[] =
     {
       0x48, 0x89, 0xe5,                                 // mov    rbp,rsp    
       0x48, 0x89, 0xe1,                                 // mov    rcx,rsp
@@ -80,11 +80,13 @@ static PVOID HkBuilderWrapperCallTrmpln(IN PICT_DATA_RELATED pRelatedDataICT)
       0x9d,                                             // popfq
       0x65, 0x48,0x8b,0x04,0x25,0x88,0x01,0x00,0x00,    // mov    rax, QWORD PTR gs:[188h]  | KeLeaveGuardedRegion 
       0x66, 0x83,0x80,0xe6,0x01,0x00,0x00,0x01,         // add    WORD PTR[rax + 1E6h], 1   | ====================
-      0x48, 0x8B, 0x44, 0x24, 0x08                      // mov    rax, QWORD PTR [rsp+08h]
+      0x48, 0x8B, 0x44, 0x24, 0x08,                     // mov    rax, QWORD PTR [rsp+08h]
+      0x50                                              // push   rax
     };
 
     CONST UCHAR RestoreContext2[] =
     {
+      0x58,                                             // pop rax
       0x48, 0x83, 0xec, 0x08,                           // sub    rsp,08h
       0x48, 0x89, 0x04, 0x24,                           // mov    QWORD PTR[rsp],rax
       0x48, 0x8b, 0x44, 0x24, 0x08,                     // mov    rax,QWORD PTR[rsp + 08h]
@@ -115,25 +117,25 @@ static PVOID HkBuilderWrapperCallTrmpln(IN PICT_DATA_RELATED pRelatedDataICT)
 
     HrdPatchAttributesInputPte(0x7FFFFFFFFFFFFFFFI64, 0I64, pPageStub);
 
-    *(PVOID*)((PUCHAR)&CoreWrapperCall + 24) = pRelatedDataICT->pHookRoutine;
+    *(PVOID*)((PUCHAR)&CoreStubCall + 24) = pRelatedDataICT->pHookRoutine;
 
     memset(pPageStub, 0, PAGE_SIZE);
 
     memcpy(pPageStub, SaveContext, sizeof(SaveContext));
 
-    memcpy((PUCHAR)pPageStub + sizeof(SaveContext), CoreWrapperCall, sizeof(CoreWrapperCall));
+    memcpy((PUCHAR)pPageStub + sizeof(SaveContext), CoreStubCall, sizeof(CoreStubCall));
 
-    memcpy((PUCHAR)pPageStub + (sizeof(SaveContext) + sizeof(CoreWrapperCall)), RestoreContext1, sizeof(RestoreContext1));
+    memcpy((PUCHAR)pPageStub + (sizeof(SaveContext) + sizeof(CoreStubCall)), RestoreContext1, sizeof(RestoreContext1));
 
-    memcpy((PUCHAR)pPageStub + (sizeof(SaveContext) + sizeof(CoreWrapperCall) + sizeof(RestoreContext1)), pRelatedDataICT->pHandlerHook, pRelatedDataICT->LengthHandler);
+    memcpy((PUCHAR)pPageStub + (sizeof(SaveContext) + sizeof(CoreStubCall) + sizeof(RestoreContext1)), pRelatedDataICT->pHandlerHook, pRelatedDataICT->LengthHandler);
 
-    memcpy((PUCHAR)pPageStub + (sizeof(SaveContext) + sizeof(CoreWrapperCall) + sizeof(RestoreContext1) + pRelatedDataICT->LengthHandler), RestoreContext2, sizeof(RestoreContext2));
+    memcpy((PUCHAR)pPageStub + (sizeof(SaveContext) + sizeof(CoreStubCall) + sizeof(RestoreContext1) + pRelatedDataICT->LengthHandler), RestoreContext2, sizeof(RestoreContext2));
 
     return pPageStub;
 }
 
 /*++
-* Routine: HkInitCallTrmplnIntrnl
+* Routine: InitCallTrmplnIntrnl
 *
 * MaxIRQL: DISPATCH_LEVEL
 *
@@ -143,9 +145,11 @@ static PVOID HkBuilderWrapperCallTrmpln(IN PICT_DATA_RELATED pRelatedDataICT)
 *
 * Description: The main ICT routine engaged in the installation of a CallTrampoline.
 --*/
-static VOID HkInitCallTrmplnIntrnl(IN OUT PICT_DATA_RELATED pRelatedDataICT)
+static VOID InitCallTrmplnIntrnl(IN OUT PICT_DATA_RELATED pRelatedDataICT)
 {
     #define ERROR_INIT_CALL_TRMPLN_INTRNL 0x6f21b8d4I32
+
+    UCHAR CurrIrql = (UCHAR)__readcr8();
 
     UCHAR CallTrmpln[] =
     {
@@ -153,34 +157,39 @@ static VOID HkInitCallTrmplnIntrnl(IN OUT PICT_DATA_RELATED pRelatedDataICT)
       0x48, 0xb8, 0x88, 0x88, 0x88, 0x88, 0x78, // mov    rax, 1234567888888888h
       0x56, 0x34, 0x12,
       0xff, 0xd0,                               // call   rax
+      0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+      0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+      0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+      0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+      0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+      0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+      0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+      0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+      0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+      0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+      0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+      0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+      0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 // nops (alignment area)
     };
 
     INDPN_RW_V_MEMORY_DATA DataIndpnRWVMem = { 0 };
+    DataIndpnRWVMem.FlagsExecute = MEM_INDPN_RW_WRITE_OP_BIT;
+    DataIndpnRWVMem.pVa = pRelatedDataICT->pBasePatch;
+    DataIndpnRWVMem.pIoBuffer = &CallTrmpln;
+    DataIndpnRWVMem.LengthRW = (!pRelatedDataICT->LengthAlignment ? (sizeof(CallTrmpln) - 256) : ((sizeof(CallTrmpln) - 256) + pRelatedDataICT->LengthAlignment));
 
-    UCHAR NopArea[256] = { 0 };
+    PVOID pPageStub = NULL;
 
-    memset(&NopArea, 0x90, sizeof(NopArea));
-
-    PVOID pPageHookHandler = NULL;
-
-    if (__readcr8() > DISPATCH_LEVEL)
+    if (CurrIrql > DISPATCH_LEVEL)
     {
-        DbgLog("[TheiaPg <->] HkInitCallTrmplnIntrnl: Inadmissible IRQL | IRQL: 0x%02X\n", __readcr8());;
+        DbgLog("[TheiaPg <->] HkInitCallTrmplnIntrnl: Inadmissible IRQL | IRQL: 0x%02X\n", CurrIrql);
 
         DieDispatchIntrnlError(ERROR_INIT_CALL_TRMPLN_INTRNL);
     }
 
-    pPageHookHandler = HkBuilderWrapperCallTrmpln(pRelatedDataICT);
+    pPageStub = BuildStubCallTrmpln(pRelatedDataICT);
 
-    *(PVOID*)(CallTrmpln + 3) = pPageHookHandler;
-
-    DataIndpnRWVMem.FlagsExecute = MEM_INDPN_RW_WRITE_OP_BIT;
-
-    DataIndpnRWVMem.pVa = pRelatedDataICT->pBasePatch;
-
-    DataIndpnRWVMem.pIoBuffer = &CallTrmpln;
-
-    DataIndpnRWVMem.LengthRW = sizeof(CallTrmpln);
+    *(PVOID*)(CallTrmpln + 3) = pPageStub;
 
     //
     // To increase the probability of successful installation of inline trmpln, 
@@ -190,23 +199,12 @@ static VOID HkInitCallTrmplnIntrnl(IN OUT PICT_DATA_RELATED pRelatedDataICT)
     // This requires a change in the CPU synchronization logic of routine HrdIndpnRWVMemory.
     //
     HrdIndpnRWVMemory(&DataIndpnRWVMem);
-
-    if (pRelatedDataICT->LengthAlignment) 
-    { 
-        DataIndpnRWVMem.pVa = ((PUCHAR)pRelatedDataICT->pBasePatch + sizeof(CallTrmpln));
-
-        DataIndpnRWVMem.pIoBuffer = &NopArea;
-
-        DataIndpnRWVMem.LengthRW = pRelatedDataICT->LengthAlignment;
-
-        HrdIndpnRWVMemory(&DataIndpnRWVMem);
-    }
-    
+  
     return;
 }
 
 /*++
-* Routine: HkInitCallTrmpln
+* Routine: InitCallTrmpln
 *
 * MaxIRQL: DISPATCH_LEVEL
 *
@@ -214,22 +212,24 @@ static VOID HkInitCallTrmplnIntrnl(IN OUT PICT_DATA_RELATED pRelatedDataICT)
 *
 * @param RelatedDataICT: Pointer to PICT_DATA_RELATED
 *
-* Description: Wrapper for HkInitCallTrmplnIntrnl.
+* Description: Wrapper for InitCallTrmplnIntrnl.
 --*/
-VOID HkInitCallTrmpln(IN PICT_DATA_RELATED pRelatedDataICT)
+VOID InitCallTrmpln(IN PICT_DATA_RELATED pRelatedDataICT)
 {
     #define ERROR_INIT_CALL_TRMPLN 0x8319ebd9UI32
 
     CheckStatusTheiaCtx();
 
-    if (__readcr8() > DISPATCH_LEVEL)
+    UCHAR CurrIrql = (UCHAR)__readcr8();
+
+    if (CurrIrql > DISPATCH_LEVEL)
     {
-        DbgLog("[TheiaPg <->] InitCallTrmpln: Inadmissible IRQL | IRQL: 0x%02X\n", __readcr8());
+        DbgLog("[TheiaPg <->] InitCallTrmpln: Inadmissible IRQL | IRQL: 0x%02X\n", CurrIrql);
 
         DieDispatchIntrnlError(ERROR_INIT_CALL_TRMPLN);
     }
 
-    HkInitCallTrmplnIntrnl(pRelatedDataICT);
+    InitCallTrmplnIntrnl(pRelatedDataICT);
  
     return STATUS_SUCCESS;
 }

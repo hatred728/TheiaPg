@@ -12,4 +12,4 @@ typedef struct _ICT_DATA_RELATED
 
 }ICT_DATA_RELATED, * PICT_DATA_RELATED;
 
-extern VOID HkInitCallTrmpln(IN PICT_DATA_RELATED pRelatedDataICT);
+extern VOID InitCallTrmpln(IN PICT_DATA_RELATED pRelatedDataICT);
