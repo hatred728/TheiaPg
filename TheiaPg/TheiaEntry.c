@@ -59,7 +59,7 @@ VOID TheiaEntry(VOID)
     DbgLog("[TheiaPg <+>] TheiaEntry: FixKiSwInterruptDispatch\n"); 
     HrdIndpnRWVMemory(&DataIndpnRWVMem);
     
-    DbgLog("[TheiaPg <+>] TheiaEntry: FixgMaxDataSize\n");
+    DbgLog("[TheiaPg <+>] TheiaEntry: FixMaxDataSize\n");
     
     //
     // Nulling gMaxDataSize is necessary to neutralize the PG check routine,
@@ -90,11 +90,11 @@ VOID TheiaEntry(VOID)
     
     g_pTheiaCtx->pKeIpiGenericCall(&SearchKdpcInPgPrcbFields, NULL);
 
-    DbgLog("[TheiaPg <+>] TheiaEntry: FixgKiBalanceSetManagerPeriodicDpc\n");
+    DbgLog("[TheiaPg <+>] TheiaEntry: FixKiBalanceSetManagerPeriodicDpc\n");
 
     if (((PKDPC)g_pTheiaCtx->pKiBalanceSetManagerPeriodicDpc)->DeferredRoutine != g_pTheiaCtx->pKiBalanceSetManagerDeferredRoutine)
     {
-        DbgLog("[TheiaPg <+>] TheiaEntry: Detect PG-DeferredRoutine in gKiBalanceSetManagerPeriodicDpc | DeferredRoutine: 0x%I64X\n", ((PKDPC)g_pTheiaCtx->pKiBalanceSetManagerPeriodicDpc)->DeferredRoutine);
+        DbgLog("[TheiaPg <+>] TheiaEntry: Detect PG-DeferredRoutine in KiBalanceSetManagerPeriodicDpc | DeferredRoutine: 0x%I64X\n", ((PKDPC)g_pTheiaCtx->pKiBalanceSetManagerPeriodicDpc)->DeferredRoutine);
 
         DataIndpnRWVMem.pVa = ((PKDPC)g_pTheiaCtx->pKiBalanceSetManagerPeriodicDpc)->DeferredRoutine;
 

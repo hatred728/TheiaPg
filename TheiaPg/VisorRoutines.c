@@ -72,21 +72,18 @@ volatile VOID VsrKiExecuteAllDpcs(IN PINPUTCONTEXT_ICT pInputCtx)
         }
         else
         {
-            if (((ULONG32)(pCurrKDPC->DeferredContext) & 0xffffffffUI32) > 0xffffUI32)
+            for (UCHAR i = 0UI8, j = 0UI8; ; ++i)
             {
-                for (UCHAR i = 0UI8, j = 0UI8; ; ++i)
+                if (((ULONG64)(pCurrKDPC->DeferredContext) >> i) & 0x01UI64) { ++j; }
+
+                if (i == 63)
                 {
-                    if (((ULONG64)(pCurrKDPC->DeferredContext) >> i) & 0x01UI64) { ++j; }
-
-                    if (i == 63)
+                    if (j > 4)
                     {
-                        if (j > 4)
-                        {
-                            TypeDetect = 1UI8;
-                        }
-
-                        break;
+                        TypeDetect = 1UI8;
                     }
+
+                    break;
                 }
             }
         }
@@ -207,21 +204,18 @@ volatile VOID VsrKiRetireDpcList(IN PINPUTCONTEXT_ICT pInputCtx)
             }
             else
             {
-                if (((ULONG32)(pCurrKDPC->DeferredContext) & 0xffffffffUI32) > 0xffffUI32)
+                for (UCHAR i = 0UI8, j = 0UI8; ; ++i)
                 {
-                    for (UCHAR i = 0UI8, j = 0UI8; ; ++i)
+                    if (((ULONG64)(pCurrKDPC->DeferredContext) >> i) & 0x01UI64) { ++j; }
+
+                    if (i == 63)
                     {
-                        if (((ULONG64)(pCurrKDPC->DeferredContext) >> i) & 0x01UI64) { ++j; }
-
-                        if (i == 63)
+                        if (j > 4)
                         {
-                            if (j > 4)
-                            {
-                                TypeDetect = 1UI8;
-                            }
-
-                            break;
+                            TypeDetect = 1UI8;
                         }
+
+                        break;
                     }
                 }
             }
@@ -420,21 +414,18 @@ volatile VOID VsrExQueueWorkItem(IN PINPUTCONTEXT_ICT pInputCtx)
     }
     else
     {
-        if (((ULONG32)(pCurrWorkItem->Parameter) & 0xffffffffUI32) > 0xffffUI32)
+        for (UCHAR i = 0UI8, j = 0UI8; ; ++i)
         {
-            for (UCHAR i = 0UI8, j = 0UI8; ; ++i)
+            if (((ULONG64)(pCurrWorkItem->Parameter) >> i) & 0x01UI64) { ++j; }
+
+            if (i == 63)
             {
-                if (((ULONG64)(pCurrWorkItem->Parameter) >> i) & 0x01UI64) { ++j; }
-
-                if (i == 63)
+                if (j > 4)
                 {
-                    if (j > 4)
-                    {
-                        TypeDetect = 1UI8;
-                    }
-
-                    break;
+                    TypeDetect = 1UI8;
                 }
+
+                break;
             }
         }
     }
@@ -488,24 +479,24 @@ volatile VOID VsrExAllocatePool2(IN OUT PINPUTCONTEXT_ICT pInputCtx)
     if (!pInternalCtx) { DbgLog("[TheiaPg <->] VsrExAllocatePool2: Bad alloc page for InternalCtx\n"); return; }
 
     pInternalCtx->ContextFlags = CONTEXT_CONTROL;
-    pInternalCtx->Rax = pInputCtx->rax;
-    pInternalCtx->Rcx = pInputCtx->rcx;
-    pInternalCtx->Rdx = pInputCtx->rdx;
-    pInternalCtx->Rbx = pInputCtx->rbx;
-    pInternalCtx->Rsi = pInputCtx->rsi;
-    pInternalCtx->Rdi = pInputCtx->rdi;
-    pInternalCtx->R8 = pInputCtx->r8;
-    pInternalCtx->R9 = pInputCtx->r9;
-    pInternalCtx->R10 = pInputCtx->r10;
-    pInternalCtx->R11 = pInputCtx->r11;
-    pInternalCtx->R12 = pInputCtx->r12;
-    pInternalCtx->R13 = pInputCtx->r13;
-    pInternalCtx->R14 = pInputCtx->r14;
-    pInternalCtx->R15 = pInputCtx->r15;
-    pInternalCtx->Rbp = pInputCtx->rbp;
-    pInternalCtx->Rsp = pInputCtx->rsp;
-    pInternalCtx->Rip = pInputCtx->rip;
-    pInternalCtx->EFlags = pInputCtx->Rflags;
+    pInternalCtx->Rax          = pInputCtx->rax;
+    pInternalCtx->Rcx          = pInputCtx->rcx;
+    pInternalCtx->Rdx          = pInputCtx->rdx;
+    pInternalCtx->Rbx          = pInputCtx->rbx;
+    pInternalCtx->Rsi          = pInputCtx->rsi;
+    pInternalCtx->Rdi          = pInputCtx->rdi;
+    pInternalCtx->R8           = pInputCtx->r8;
+    pInternalCtx->R9           = pInputCtx->r9;
+    pInternalCtx->R10          = pInputCtx->r10;
+    pInternalCtx->R11          = pInputCtx->r11;
+    pInternalCtx->R12          = pInputCtx->r12;
+    pInternalCtx->R13          = pInputCtx->r13;
+    pInternalCtx->R14          = pInputCtx->r14;
+    pInternalCtx->R15          = pInputCtx->r15;
+    pInternalCtx->Rbp          = pInputCtx->rbp;
+    pInternalCtx->Rsp          = pInputCtx->rsp;
+    pInternalCtx->Rip          = pInputCtx->rip;
+    pInternalCtx->EFlags       = pInputCtx->Rflags;
 
     PULONG64 pRetAddrsTrace = (PULONG64)g_pTheiaCtx->pMmAllocateIndependentPagesEx(PAGE_SIZE, -1I32, 0I64, 0I32);
 

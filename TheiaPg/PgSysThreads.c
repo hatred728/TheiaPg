@@ -115,24 +115,24 @@ volatile VOID SearchPgSysThreadRoutine(IN OUT PINPUTCONTEXT_ICT pInputCtx)
     if (!pInternalCtx) { DbgLog("[TheiaPg <->] SearchPgSysThreadRoutine: Bad alloc page for InternalCtx\n"); return; }
 
     pInternalCtx->ContextFlags = CONTEXT_CONTROL;
-    pInternalCtx->Rax = pInputCtx->rax;
-    pInternalCtx->Rcx = pInputCtx->rcx;
-    pInternalCtx->Rdx = pInputCtx->rdx;
-    pInternalCtx->Rbx = pInputCtx->rbx;
-    pInternalCtx->Rsi = pInputCtx->rsi;
-    pInternalCtx->Rdi = pInputCtx->rdi;
-    pInternalCtx->R8 = pInputCtx->r8;
-    pInternalCtx->R9 = pInputCtx->r9;
-    pInternalCtx->R10 = pInputCtx->r10;
-    pInternalCtx->R11 = pInputCtx->r11;
-    pInternalCtx->R12 = pInputCtx->r12;
-    pInternalCtx->R13 = pInputCtx->r13;
-    pInternalCtx->R14 = pInputCtx->r14;
-    pInternalCtx->R15 = pInputCtx->r15;
-    pInternalCtx->Rbp = pInputCtx->rbp;
-    pInternalCtx->Rsp = pInputCtx->rsp;
-    pInternalCtx->Rip = pInputCtx->rip;
-    pInternalCtx->EFlags = pInputCtx->Rflags;
+    pInternalCtx->Rax          = pInputCtx->rax;
+    pInternalCtx->Rcx          = pInputCtx->rcx;
+    pInternalCtx->Rdx          = pInputCtx->rdx;
+    pInternalCtx->Rbx          = pInputCtx->rbx;
+    pInternalCtx->Rsi          = pInputCtx->rsi;
+    pInternalCtx->Rdi          = pInputCtx->rdi;
+    pInternalCtx->R8           = pInputCtx->r8;
+    pInternalCtx->R9           = pInputCtx->r9;
+    pInternalCtx->R10          = pInputCtx->r10;
+    pInternalCtx->R11          = pInputCtx->r11;
+    pInternalCtx->R12          = pInputCtx->r12;
+    pInternalCtx->R13          = pInputCtx->r13;
+    pInternalCtx->R14          = pInputCtx->r14;
+    pInternalCtx->R15          = pInputCtx->r15;
+    pInternalCtx->Rbp          = pInputCtx->rbp;
+    pInternalCtx->Rsp          = pInputCtx->rsp;
+    pInternalCtx->Rip          = pInputCtx->rip;
+    pInternalCtx->EFlags       = pInputCtx->Rflags;
 
     PULONG64 pRetAddrsTrace = (PULONG64)g_pTheiaCtx->pMmAllocateIndependentPagesEx(PAGE_SIZE, -1I32, 0I64, 0I32);
 
