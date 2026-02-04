@@ -12,6 +12,8 @@ shr eax,9
 
 and al,1
 
+movzx eax, al
+
 ret
 
 HrdGetIF ENDP
