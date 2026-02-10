@@ -33,32 +33,32 @@ mov ecx, edx
 ; r14 for value-ThreadListEntry
 ; r15 for value-InitialStack
 
-mov eax,dword ptr[r13 + 48]  ; Get offset ETHREAD.Win32StartAddress 
-mov qword ptr [r10 + rax] , 0    ; Nulling Win32StartAddress        
+mov eax,dword ptr[r13 + 48]    ; Get offset ETHREAD.Win32StartAddress 
+mov qword ptr [r10 + rax] , 0  ; Nulling Win32StartAddress        
 
-mov eax,dword ptr[r13 + 60]  ; Get offset KTHREAD.InitialStack 
-mov r15, qword ptr [r10 + rax]   ; Save value InitialStack
-mov qword ptr [r10 + rax] , 0    ; Nulling InitialStack             
+mov eax,dword ptr[r13 + 60]    ; Get offset KTHREAD.InitialStack 
+mov r15, qword ptr [r10 + rax] ; Save value InitialStack
+mov qword ptr [r10 + rax] , 0  ; Nulling InitialStack             
 
-mov eax,dword ptr[r13 + 64]  ; Get offset KTHREAD.StackLimit 
-mov qword ptr [r10 + rax] , 0    ; Nulling StackLimit               
+mov eax,dword ptr[r13 + 64]    ; Get offset KTHREAD.StackLimit 
+mov qword ptr [r10 + rax] , 0  ; Nulling StackLimit               
  
-mov eax,dword ptr[r13 + 68]  ; Get offset KTHREAD.StackBase 
-mov qword ptr [r10 + rax] , 0    ; Nulling StackBase                
+mov eax,dword ptr[r13 + 68]    ; Get offset KTHREAD.StackBase 
+mov qword ptr [r10 + rax] , 0  ; Nulling StackBase                
 
-mov eax,dword ptr[r13 + 72]  ; Get offset KTHREAD.KernelStack 
-mov qword ptr [r10 + rax] , 0    ; Nulling KernelStack              
+mov eax,dword ptr[r13 + 72]    ; Get offset KTHREAD.KernelStack 
+mov qword ptr [r10 + rax] , 0  ; Nulling KernelStack              
 
-mov eax,dword ptr[r13 + 84]  ; Get offset KTHREAD.ContextSwitches 
-mov qword ptr [r10 + rax] , 0    ; Nulling ContextSwitches          
+mov eax,dword ptr[r13 + 84]    ; Get offset KTHREAD.ContextSwitches 
+mov qword ptr [r10 + rax] , 0  ; Nulling ContextSwitches          
 
-mov eax,dword ptr[r13 + 88]  ; Get offset KTHREAD.WaitTime 
-mov qword ptr [r10 + rax] , 0    ; Nulling WaitTime                 
+mov eax,dword ptr[r13 + 88]    ; Get offset KTHREAD.WaitTime 
+mov qword ptr [r10 + rax] , 0  ; Nulling WaitTime                 
 
-mov eax,dword ptr[r13 + 92]  ; Get offset KTHREAD.KernelTime 
-mov qword ptr [r10 + rax] , 0    ; Nulling KernelTime               
+mov eax,dword ptr[r13 + 92]    ; Get offset KTHREAD.KernelTime 
+mov qword ptr [r10 + rax] , 0  ; Nulling KernelTime               
 
-mov eax, dword ptr[r13 + 100] ; Get offset KTHREAD.ThreadListEntry 
+mov eax, dword ptr[r13 + 100]  ; Get offset KTHREAD.ThreadListEntry 
 
 cmp qword ptr[g_DieNtosHeadThreadList], 0
 
@@ -66,7 +66,7 @@ jz UsingThreadListCurrProc
 
 mov r14, qword ptr[g_DieNtosHeadThreadList]
 
-mov r11, qword ptr[g_DieNtosHeadThreadList]    ; Save address current Thread-Obj 
+mov r11, qword ptr[g_DieNtosHeadThreadList] ; Save address current Thread-Obj 
 
 add r11, rax
 
@@ -74,9 +74,9 @@ jmp short SkipUsingThreadListCurrProc
 
 UsingThreadListCurrProc:
 
-mov r14, qword ptr [r10 + rax]   ; Save value ThreadListEntry
+mov r14, qword ptr [r10 + rax] ; Save value ThreadListEntry
 
-mov r11, qword ptr gs:[0188h]    ; Save address current Thread-Obj 
+mov r11, qword ptr gs:[0188h] ; Save address current Thread-Obj 
 
 add r11, rax
 

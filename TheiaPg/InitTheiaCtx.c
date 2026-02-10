@@ -41,7 +41,7 @@ VOID InitTheiaMetaDataBlock(IN OUT PTHEIA_METADATA_BLOCK pTheiaMetaDataBlock)
 
     ITMDBCtx[ITMDB_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID] = MmGetSystemRoutineAddress(&StrMmIsNonPagedSystemAddressValid);
 
-    if (!pTheiaMetaDataBlock || !((__readcr8() <= DISPATCH_LEVEL) ? ITMDBCtx[ITMDB_LOCAL_CONTEXT_MMISADDRESSVALID](pTheiaMetaDataBlock) : ITMDBCtx[ITMDB_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID](pTheiaMetaDataBlock)))
+    if (!pTheiaMetaDataBlock || !((__readcr8() <= DISPATCH_LEVEL) ? ITMDBCtx[ITMDB_LOCAL_CONTEXT_MMISADDRESSVALID](pTheiaMetaDataBlock) : ITMDBCtx[ITMDB_LOCAL_CONTEXT_MMISNONPAGEDSYSTEMADDRESSVALID](pTheiaMetaDataBlock) || !(((ULONG64)pTheiaMetaDataBlock >> 47) == 0x1ffffUI64)))
     {
         DbgLog("[TheiaPg <->] InitMetaDataBlock: Invalid TheiaMetaDataBlock\n");
 

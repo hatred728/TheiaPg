@@ -35,6 +35,7 @@ static PVOID BuildStubApcRoutine(IN PVOID pRoutine)
 
     CONST UCHAR SaveContext[] =
     {
+      0xfa,                                     // cli
       0x50,                                     // push   rax
       0x9c,                                     // pushfq     
       0x54,                                     // push   rsp
@@ -64,10 +65,24 @@ static PVOID BuildStubApcRoutine(IN PVOID pRoutine)
     CONST UCHAR ClearSaveContext[] =
     {
       0x48, 0x81, 0xc4, 0x90, 0x00, 0x00, 0x00, // add    rsp,090h
+      0x8c, 0xd0,                               // mov    eax,ss
+      0x8e, 0xd0,                               // mov    ss,eax
+      0xfb,                                     // sti
+      0x8e, 0xd0,                               // mov    ss,eax
       0xc3                                      // ret
     };
 
-    PVOID pPageStub = (PVOID)g_pTheiaCtx->pMmAllocateIndependentPagesEx(PAGE_SIZE, -1I32, 0I64, 0I32);
+    UCHAR CurrIrql = (UCHAR)__readcr8();
+
+    PVOID pPageStub = NULL;
+
+    if (CurrIrql > DISPATCH_LEVEL)
+    {
+        DbgLog("[TheiaPg <->] VsrBuilderStubApcRoutine: Inadmissible IRQL | IRQL: 0x%02X\n", CurrIrql);
+
+        DieDispatchIntrnlError(ERROR_BUILD_STUB_APC_ROUTINE);
+    }
+    else { pPageStub = g_pTheiaCtx->pMmAllocateIndependentPagesEx(PAGE_SIZE, -1, 0I64, 0); }
 
     if (!pPageStub)
     {
@@ -108,7 +123,7 @@ volatile VOID SearchPgSysThreadRoutine(IN OUT PINPUTCONTEXT_ICT pInputCtx)
 {
     CheckStatusTheiaCtx();
 
-    if (!(g_pTheiaCtx->pPsIsSystemThread((PETHREAD)__readgsqword(0x188UI32)))) { return; }
+    UCHAR CurrIrql = (UCHAR)__readcr8();
 
     PCONTEXT pInternalCtx = (PCONTEXT)g_pTheiaCtx->pMmAllocateIndependentPagesEx(PAGE_SIZE, -1I32, 0I64, 0I32);
 
@@ -152,8 +167,6 @@ volatile VOID SearchPgSysThreadRoutine(IN OUT PINPUTCONTEXT_ICT pInputCtx)
     CONST LONG64 Timeout = (-10000UI64 * 31536000000UI64); ///< 1 year.
     LONG32 SaveRel32Offset = 0I32;
     CONST UCHAR RetOpcode = 0xc3UI8;
-    BOOLEAN OldIF = FALSE;
-    UCHAR CurrIrql = (UCHAR)__readcr8();
 
     PVOID pSearchSdbpCheckDllRWX = NULL;
     PVOID pPgDpcRoutine = NULL;
@@ -190,7 +203,7 @@ volatile VOID SearchPgSysThreadRoutine(IN OUT PINPUTCONTEXT_ICT pInputCtx)
 
             OtherDetects:
 
-            DbgLog("=================================================================\n");
+            DbgLog("=======================================================================\n");
             DbgLog("RAX: 0x%I64X\n", pInternalCtx->Rax);
             DbgLog("RCX: 0x%I64X\n", pInternalCtx->Rcx);
             DbgLog("RDX: 0x%I64X\n", pInternalCtx->Rdx);
@@ -209,7 +222,7 @@ volatile VOID SearchPgSysThreadRoutine(IN OUT PINPUTCONTEXT_ICT pInputCtx)
             DbgLog("RBP: 0x%I64X\n", pInternalCtx->Rbp);
             DbgLog("RIP: 0x%I64X\n\n", pInternalCtx->Rip);
             DbgLog("RFLAGS: 0x%I64X\n", pInternalCtx->EFlags);
-            DbgLog("=================================================================\n");
+            DbgLog("=======================================================================\n");
 
             DbgText
             ( // {

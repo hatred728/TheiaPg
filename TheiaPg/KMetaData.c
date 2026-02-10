@@ -70,6 +70,7 @@ CONST UCHAR _25h2_w11_ExQueueWorkItem_MASK[] = { "xxxxxxxxxxxxx" };
 
 CONST UCHAR _25h2_w11_HandlerVsrExAllocatePool2[] =
 {
+  0x9d,                                     // popfq
   0x48, 0x83, 0xc4, 0x10,                   // add     rsp, 010h
   0x41, 0x5f,                               // pop     r15
   0x41, 0x5e,                               // pop     r14 
@@ -78,7 +79,8 @@ CONST UCHAR _25h2_w11_HandlerVsrExAllocatePool2[] =
   0x5f,                                     // pop     rdi
   0x5e,                                     // pop     rsi
   0x5d,                                     // pop     rbp
-  0xc3                                      // ret
+  0xc3,                                     // ret
+  0xfc, 0xe5, 0x65, 0xef, 0x1e, 0xe5, 0x33, 0x41 ///< ImmunitySignature: 0x4133e51eef65e5fc (For this handler, epilogue stub (RestoreContext2) is not executed)
 };
 CONST UCHAR _25h2_w11_ExAllocatePool2_SIG[] = ///< For hook.
 {

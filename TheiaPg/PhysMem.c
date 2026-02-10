@@ -33,7 +33,7 @@ VOID HrdIndpnRWVMemory(IN OUT PINDPN_RW_V_MEMORY_DATA pInputData)
 	volatile static ULONG32 ActiveProcessorCount2 = 0UI32;
 
 	LONG32 SaveRel32Offset = 0I32;
-	BOOLEAN OldIF = FALSE;
+	BOOLEAN OldIF = HrdGetIF();
 	UCHAR CurrIrql = (UCHAR)__readcr8();
 	PMMPTE_HARDWARE pPteInputVa = NULL;
 	PVOID pMetaVPage = NULL;
@@ -60,7 +60,7 @@ VOID HrdIndpnRWVMemory(IN OUT PINDPN_RW_V_MEMORY_DATA pInputData)
 
 	if (!(_interlockedbittestandset(&SynchBarrier0, 0I32)))
 	{
-		if (!pInputData || !((CurrIrql <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pInputData) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pInputData)))
+		if (!pInputData || !((CurrIrql <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pInputData) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pInputData) || !(((ULONG64)pInputData >> 47) == 0x1ffffUI64)))
 		{
 			DbgLog("[TheiaPg <->] HrdIndpnRWVMemory: Invalid InputData\n");
 
@@ -82,14 +82,14 @@ VOID HrdIndpnRWVMemory(IN OUT PINDPN_RW_V_MEMORY_DATA pInputData)
 			if (pInputData->FlagsExecute & MEM_INDPN_RW_READ_OP_BIT) { DieDispatchIntrnlError(ERROR_READ_V_MEMORY); }
 			else { DieDispatchIntrnlError(ERROR_WRITE_V_MEMORY); }
 		}
-		else if (!pInputData->pVa || !((CurrIrql <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pInputData->pVa) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pInputData->pVa)))
+		else if (!pInputData->pVa || !((CurrIrql <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pInputData->pVa) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pInputData->pVa) || !(((ULONG64)pInputData->pVa >> 47) == 0x1ffffUI64)))
 		{
 			DbgLog("[TheiaPg <->] HrdIndpnRWVMemory: Invalid Va\n");
 
 			if (pInputData->FlagsExecute & MEM_INDPN_RW_READ_OP_BIT) { DieDispatchIntrnlError(ERROR_READ_V_MEMORY); }
 			else { DieDispatchIntrnlError(ERROR_WRITE_V_MEMORY); }
 		}
-		else if (!pInputData->pIoBuffer || !((CurrIrql <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pInputData->pIoBuffer) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pInputData->pIoBuffer)))
+		else if (!pInputData->pIoBuffer || !((CurrIrql <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pInputData->pIoBuffer) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pInputData->pIoBuffer) || !(((ULONG64)pInputData->pIoBuffer >> 47) == 0x1ffffUI64)))
 		{
 			DbgLog("[TheiaPg <->] HrdIndpnRWVMemory: Invalid InputBuffer\n");
 
@@ -117,7 +117,7 @@ VOID HrdIndpnRWVMemory(IN OUT PINDPN_RW_V_MEMORY_DATA pInputData)
 	}
 	else
 	{
-		if (OldIF = HrdGetIF()) { _disable(); }
+		if (OldIF) { _disable(); }
 
 		_InterlockedDecrement(&ActiveProcessorCount);
 
@@ -283,7 +283,7 @@ VOID HrdPatchAttributesInputPte(IN ULONG64 AndMask, IN ULONG64 OrMask, IN OUT PV
 
 		DieDispatchIntrnlError(ERROR_PATCH_PTE_ATTRIBUTES);
 	}
-	else if (!pVa || !((__readcr8() <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pVa) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pVa)))
+	else if (!pVa || !((__readcr8() <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pVa) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pVa) || !(((ULONG64)pVa >> 47) == 0x1ffffUI64)))
 	{
 		DbgLog("[TheiaPg <->] HrdPatchAttributesInputPte: Invalid Va\n");
 
@@ -320,7 +320,7 @@ PMMPTE_HARDWARE HrdGetPteInputVa(IN PVOID pVa)
 
 	PMMPTE_HARDWARE pPteInputVa = NULL;
 
-	if (!pVa || !((__readcr8() <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pVa) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pVa)))
+	if (!pVa || !((__readcr8() <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pVa) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pVa) || !(((ULONG64)pVa >> 47) == 0x1ffffUI64)))
 	{
 		DbgLog("[TheiaPg <->] HrdGetPteInputVa: Invalid VA | VA: 0x%I64X\n", pVa);
 

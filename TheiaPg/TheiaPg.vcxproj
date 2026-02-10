@@ -71,11 +71,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
     <EnableInf2cat>false</EnableInf2cat>
+    <TimeStampServer />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
     <EnableInf2cat>false</EnableInf2cat>
-    <TimeStampServer>http://timestamp.verisign.com/scripts/timstamp.dll</TimeStampServer>
+    <TimeStampServer>
+    </TimeStampServer>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>

@@ -76,25 +76,39 @@ static PVOID BuildStubCallTrmpln(IN PICT_DATA_RELATED pRelatedDataICT)
       0x41, 0x5f,                                       // pop    r15
       0x5d,                                             // pop    rbp
       0x48, 0x83, 0xc4, 0x10,                           // add    rsp,010h
+      0x48, 0x83, 0xec, 0x08,                           // sub    rsp,0x8
+      0x48, 0x8b, 0x44, 0x24, 0x08,                     // mov    rax,QWORD PTR[rsp + 0x8]    
+      0x48, 0x89, 0x04, 0x24,                           // mov    QWORD PTR[rsp], rax
+      0x48, 0x81, 0x24, 0x24, 0xff, 0xfd, 0xff,         // and    QWORD PTR[rsp],0xfffffffffffffdff
+      0xff,                                             // 
       0x9d,                                             // popfq
-      0x48, 0x8B, 0x44, 0x24, 0x08,                     // mov    rax, QWORD PTR [rsp+08h]
+      0x48, 0x8B, 0x44, 0x24, 0x10,                     // mov    rax, QWORD PTR [rsp+10h]
     };
 
     CONST UCHAR RestoreContext2[] =
     {
       0x50,                                             // push   rax                     
-      0x48, 0x8b, 0x44, 0x24, 0x08,                     // mov    rax,QWORD PTR[rsp + 08h]
-      0x48, 0x89, 0x44, 0x24, 0x10,                     // mov    QWORD PTR[rsp + 10h],rax
+      0x48, 0x8b, 0x44, 0x24, 0x10,                     // mov    rax,QWORD PTR[rsp + 10h]
+      0x48, 0x89, 0x44, 0x24, 0x18,                     // mov    QWORD PTR[rsp + 18h],rax
+      0x9c,                                             // pushfq
       0x58,                                             // pop    rax
+      0x48, 0x25, 0xff, 0xfd, 0xff, 0xff,               // and    rax,0xfffffffffffffdff
+      0x48, 0x81, 0x64, 0x24, 0x08, 0x00, 0x02,         // and    QWORD PTR[rsp + 08h],0x200
+      0x00, 0x00,                                       // 
+      0x48, 0x09, 0x44, 0x24, 0x08,                     // or     QWORD PTR[rsp + 08h],rax
+      0x58,                                             // pop    rax
+      0x9d,                                             // popfq
       0x48, 0x83, 0xc4, 0x08,                           // add    rsp,08h
       0xc3                                              // ret
     };
 
+    UCHAR CurrIrql = (UCHAR)__readcr8();
+
     PVOID pPageStub = NULL;
 
-    if (__readcr8() > DISPATCH_LEVEL)
+    if (CurrIrql > DISPATCH_LEVEL)
     {
-        DbgLog("[TheiaPg <->] HkBuilderStubCallTrmpln: Inadmissible IRQL | IRQL: 0x%02X\n", __readcr8());
+        DbgLog("[TheiaPg <->] BuildStubCallTrmpln: Inadmissible IRQL | IRQL: 0x%02X\n", CurrIrql);
 
         DieDispatchIntrnlError(ERROR_BUILD_STUB_CALL_TRMPLN);
     }
@@ -102,7 +116,7 @@ static PVOID BuildStubCallTrmpln(IN PICT_DATA_RELATED pRelatedDataICT)
 
     if (!pPageStub)
     {
-        DbgLog("[TheiaPg <->] HkBuilderStubCallTrmpln: Bad alloc page for PageStub\n");
+        DbgLog("[TheiaPg <->] BuildStubCallTrmpln: Bad alloc page for PageStub\n");
 
         DieDispatchIntrnlError(ERROR_BUILD_STUB_CALL_TRMPLN);
     }
@@ -176,7 +190,7 @@ static VOID InitCallTrmplnIntrnl(IN OUT PICT_DATA_RELATED pRelatedDataICT)
 
     if (CurrIrql > DISPATCH_LEVEL)
     {
-        DbgLog("[TheiaPg <->] HkInitCallTrmplnIntrnl: Inadmissible IRQL | IRQL: 0x%02X\n", CurrIrql);
+        DbgLog("[TheiaPg <->] InitCallTrmplnIntrnl: Inadmissible IRQL | IRQL: 0x%02X\n", CurrIrql);
 
         DieDispatchIntrnlError(ERROR_INIT_CALL_TRMPLN_INTRNL);
     }

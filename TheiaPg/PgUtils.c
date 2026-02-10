@@ -15,7 +15,9 @@ PVOID SearchPgCtxInCtx(IN PCONTEXT pCtx)
 {
 	CheckStatusTheiaCtx();
 
-	if (!((__readcr8() <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pCtx) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pCtx)))
+	UCHAR CurrIrql = (UCHAR)__readcr8();
+
+	if (!((CurrIrql <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(pCtx) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(pCtx) || !(((ULONG64)pCtx >> 47) == 0x1ffffUI64)))
 	{
 		DbgLog("[TheiaPg <->] SearchPgCtxInCtx: Invalid Ctx\n\n");
 
@@ -26,7 +28,7 @@ PVOID SearchPgCtxInCtx(IN PCONTEXT pCtx)
 
 	for (UCHAR i = 0UI8; i < 16UI8; ++i, ++pPgCtx)
 	{
-		if (!((__readcr8() <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(*pPgCtx) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(*pPgCtx))) { continue; }
+		if (!((CurrIrql <= DISPATCH_LEVEL) ? g_pTheiaCtx->pMmIsAddressValid(*pPgCtx) : g_pTheiaCtx->pMmIsNonPagedSystemAddressValid(*pPgCtx)) || !((*pPgCtx >> 47) == 0x1ffffUI64)) { continue; }
 
 		if (!(memcmp(*pPgCtx, &g_pTheiaCtx->PgXorRoutineSig, sizeof(g_pTheiaCtx->PgXorRoutineSig)))) { return *(PVOID*)pPgCtx; }
 	}
@@ -51,7 +53,7 @@ VOID SearchKdpcInPgPrcbFields(VOID)
 
 	CheckStatusTheiaCtx();
 
-	BOOLEAN OldIF = FALSE;
+	BOOLEAN CurrIF = HrdGetIF();
 	ULONG32 CurrCoreNum = (ULONG32)__readgsdword(g_pTheiaCtx->TheiaMetaDataBlock.KPCR_Prcb_OFFSET + g_pTheiaCtx->TheiaMetaDataBlock.KPRCB_Number_OFFSET);
 
 	ULONG32 GsOffsetHalReserved = (g_pTheiaCtx->TheiaMetaDataBlock.KPCR_Prcb_OFFSET + g_pTheiaCtx->TheiaMetaDataBlock.KPRCB_HalReserved);
@@ -71,20 +73,19 @@ VOID SearchKdpcInPgPrcbFields(VOID)
 				{
 					DbgLog("[TheiaPg <+>] SearchKdpcInPgPrcbFields: Detect PG-KDPC in KPRCB.HalReserved[%01d] | _KDPC: 0x%I64X | CpuCore: 0x%I32X\n", i, pCurrentCheckKDPC, CurrCoreNum);
 
-					if (OldIF = HrdGetIF()) { _disable(); }
+					SAFE_DISABLE(CurrIF,
+					{
+					  HrdGetPteInputVa(pCurrentCheckKDPC->DeferredRoutine)->Dirty1 = 1;
 
-					HrdGetPteInputVa(pCurrentCheckKDPC->DeferredRoutine)->Dirty1 = 1;
+					  __writecr3(__readcr3());
 
-					__writecr3(__readcr3());
+					  *(PUCHAR)(pCurrentCheckKDPC->DeferredRoutine) = 0xc3UI8;
 
-					*(PUCHAR)(pCurrentCheckKDPC->DeferredRoutine) = 0xC3UI8;
+					  HrdGetPteInputVa(pCurrentCheckKDPC->DeferredRoutine)->Dirty1 = 0;
 
-					HrdGetPteInputVa(pCurrentCheckKDPC->DeferredRoutine)->Dirty1 = 0;
-
-					__writecr3(__readcr3());
-
-					if (OldIF) { _enable(); }
-
+					  __writecr3(__readcr3());
+					});
+						
 					__writegsqword((GsOffsetHalReserved + j), 0UI64);
 				}
 			}
@@ -101,19 +102,18 @@ VOID SearchKdpcInPgPrcbFields(VOID)
 			{
 				DbgLog("[TheiaPg <+>] SearchKdpcInPgPrcbFields: Detect PG-KDPC in KPRCB.AcpiReserved | _KDPC: 0x%I64X | CpuCore: 0x%I32X\n", pCurrentCheckKDPC, CurrCoreNum);
 
-				if (OldIF = HrdGetIF()) { _disable(); }
-
-				HrdGetPteInputVa(pCurrentCheckKDPC->DeferredRoutine)->Dirty1 = 1;
-
-				__writecr3(__readcr3());
-
-				*(PUCHAR)(pCurrentCheckKDPC->DeferredRoutine) = 0xC3UI8;
-
-				HrdGetPteInputVa(pCurrentCheckKDPC->DeferredRoutine)->Dirty1 = 0;
-
-				__writecr3(__readcr3());
-
-				if (OldIF) { _enable(); }
+				SAFE_DISABLE(CurrIF,
+			    {
+			      HrdGetPteInputVa(pCurrentCheckKDPC->DeferredRoutine)->Dirty1 = 1;
+			    
+			      __writecr3(__readcr3());
+			    
+			      *(PUCHAR)(pCurrentCheckKDPC->DeferredRoutine) = 0xc3UI8;
+			    
+			      HrdGetPteInputVa(pCurrentCheckKDPC->DeferredRoutine)->Dirty1 = 0;
+			    
+			      __writecr3(__readcr3());
+			    });
 
 				__writegsqword((GsOffsetAcpiReserved), 0UI64);
 			}

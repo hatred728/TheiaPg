@@ -17,8 +17,9 @@ extern CONST UCHAR _25h2_w11_KiDeliverApc_MASK[];
 extern CONST UCHAR _25h2_w11_HandlerVsrExQueueWorkItem[13];
 extern CONST UCHAR _25h2_w11_ExQueueWorkItem_SIG[];
 extern CONST UCHAR _25h2_w11_ExQueueWorkItem_MASK[];
-
-extern CONST UCHAR _25h2_w11_HandlerVsrExAllocatePool2[16];
+                                                 
+#define HANDLER_VSR_EXALLOCATEPOOL2_IMMUNITY_SIG 0x4133e51eef65e5fcUI64
+extern CONST UCHAR _25h2_w11_HandlerVsrExAllocatePool2[25];
 extern CONST UCHAR _25h2_w11_ExAllocatePool2_SIG[];
 extern CONST UCHAR _25h2_w11_ExAllocatePool2_MASK[];
 
