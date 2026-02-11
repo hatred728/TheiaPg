@@ -9,7 +9,7 @@ extern VOID TheiaEntry(VOID);
 *
 * Public/Private: Public
 *
-* @param NoParamsgpg 
+* @param NoParams 
 *
 * Description: Entry-Routine TheiaPg.sys.
 --*/
