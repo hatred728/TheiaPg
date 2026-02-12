@@ -113,38 +113,38 @@ VOID InitTheiaMetaDataBlock(IN OUT PTHEIA_METADATA_BLOCK pTheiaMetaDataBlock)
         //
         pTheiaMetaDataBlock->KIEXECUTEALLDPCS_SIG = &_25h2_w11_KiExecuteAllDpcs_SIG;
         pTheiaMetaDataBlock->KIEXECUTEALLDPCS_MASK = &_25h2_w11_KiExecuteAllDpcs_MASK;
-        pTheiaMetaDataBlock->KIEXECUTEALLDPCS_HANDLER = &_25h2_w11_HandlerVsrKiExecuteAllDpcs;
-        pTheiaMetaDataBlock->KIEXECUTEALLDPCS_LEN_HANDLER = sizeof _25h2_w11_HandlerVsrKiExecuteAllDpcs;
+        pTheiaMetaDataBlock->KIEXECUTEALLDPCS_HANDLER = &_25h2_w11_HandlerFltrKiExecuteAllDpcs;
+        pTheiaMetaDataBlock->KIEXECUTEALLDPCS_LEN_HANDLER = sizeof _25h2_w11_HandlerFltrKiExecuteAllDpcs;
         pTheiaMetaDataBlock->KIEXECUTEALLDPCS_HOOK_ALIGNMENT = 2UI32;
 
         pTheiaMetaDataBlock->KIRETIREDPCLIST_SIG = &_25h2_w11_KiRetireDpcList_SIG;
         pTheiaMetaDataBlock->KIRETIREDPCLIST_MASK = &_25h2_w11_KiRetireDpcList_MASK;
-        pTheiaMetaDataBlock->KIRETIREDPCLIST_HANDLER = &_25h2_w11_HandlerVsrKiRetireDpcList;
-        pTheiaMetaDataBlock->KIRETIREDPCLIST_LEN_HANDLER = sizeof _25h2_w11_HandlerVsrKiRetireDpcList;
+        pTheiaMetaDataBlock->KIRETIREDPCLIST_HANDLER = &_25h2_w11_HandlerFltrKiRetireDpcList;
+        pTheiaMetaDataBlock->KIRETIREDPCLIST_LEN_HANDLER = sizeof _25h2_w11_HandlerFltrKiRetireDpcList;
         pTheiaMetaDataBlock->KIRETIREDPCLIST_HOOK_ALIGNMENT = 0UI32;
 
         pTheiaMetaDataBlock->KIDELIVERAPC_SIG = &_25h2_w11_KiDeliverApc_SIG;
         pTheiaMetaDataBlock->KIDELIVERAPC_MASK = &_25h2_w11_KiDeliverApc_MASK;
-        pTheiaMetaDataBlock->KIDELIVERAPC_HANDLER = &_25h2_w11_Handler_KiDeliverApc;
-        pTheiaMetaDataBlock->KIDELIVERAPC_LEN_HANDLER = sizeof _25h2_w11_Handler_KiDeliverApc;
+        pTheiaMetaDataBlock->KIDELIVERAPC_HANDLER = &_25h2_w11_HandlerFltrKiDeliverApc;
+        pTheiaMetaDataBlock->KIDELIVERAPC_LEN_HANDLER = sizeof _25h2_w11_HandlerFltrKiDeliverApc;
         pTheiaMetaDataBlock->KIDELIVERAPC_HOOK_ALIGNMENT = 1UI32;
 
         pTheiaMetaDataBlock->EXQUEUEWORKITEM_SIG = &_25h2_w11_ExQueueWorkItem_SIG;
         pTheiaMetaDataBlock->EXQUEUEWORKITEM_MASK = &_25h2_w11_ExQueueWorkItem_MASK;
-        pTheiaMetaDataBlock->EXQUEUEWORKITEM_HANDLER = &_25h2_w11_HandlerVsrExQueueWorkItem;
-        pTheiaMetaDataBlock->EXQUEUEWORKITEM_LEN_HANDLER = sizeof _25h2_w11_HandlerVsrExQueueWorkItem;
+        pTheiaMetaDataBlock->EXQUEUEWORKITEM_HANDLER = &_25h2_w11_HandlerFltrExQueueWorkItem;
+        pTheiaMetaDataBlock->EXQUEUEWORKITEM_LEN_HANDLER = sizeof _25h2_w11_HandlerFltrExQueueWorkItem;
         pTheiaMetaDataBlock->EXQUEUEWORKITEM_HOOK_ALIGNMENT = 0UI32;
 
         pTheiaMetaDataBlock->EXALLOCATEPOOL2_SIG = &_25h2_w11_ExAllocatePool2_SIG;
         pTheiaMetaDataBlock->EXALLOCATEPOOL2_MASK = &_25h2_w11_ExAllocatePool2_MASK;
-        pTheiaMetaDataBlock->EXALLOCATEPOOL2_HANDLER = &_25h2_w11_HandlerVsrExAllocatePool2;
-        pTheiaMetaDataBlock->EXALLOCATEPOOL2_LEN_HANDLER = sizeof _25h2_w11_HandlerVsrExAllocatePool2;
+        pTheiaMetaDataBlock->EXALLOCATEPOOL2_HANDLER = &_25h2_w11_HandlerFltrExAllocatePool2;
+        pTheiaMetaDataBlock->EXALLOCATEPOOL2_LEN_HANDLER = sizeof _25h2_w11_HandlerFltrExAllocatePool2;
         pTheiaMetaDataBlock->EXALLOCATEPOOL2_HOOK_ALIGNMENT = 0UI32;
 
         pTheiaMetaDataBlock->KICUSTOMRECURSEROUTINEX_SIG = &_25h2_w11_KiCustomRecurseRoutineX_SIG;
         pTheiaMetaDataBlock->KICUSTOMRECURSEROUTINEX_MASK = &_25h2_w11_KiCustomRecurseRoutineX_MASK;
-        pTheiaMetaDataBlock->KICUSTOMRECURSEROUTINEX_HANDLER = &_25h2_w11_HandlerVsrKiCustomRecurseRoutineX;
-        pTheiaMetaDataBlock->KICUSTOMRECURSEROUTINEX_LEN_HANDLER = sizeof _25h2_w11_HandlerVsrKiCustomRecurseRoutineX;
+        pTheiaMetaDataBlock->KICUSTOMRECURSEROUTINEX_HANDLER = &_25h2_w11_HandlerFltrKiCustomRecurseRoutineX;
+        pTheiaMetaDataBlock->KICUSTOMRECURSEROUTINEX_LEN_HANDLER = sizeof _25h2_w11_HandlerFltrKiCustomRecurseRoutineX;
         pTheiaMetaDataBlock->KICUSTOMRECURSEROUTINEX_HOOK_ALIGNMENT = 0UI32;
 
         pTheiaMetaDataBlock->KIBALANCESETMANANGERDEFERREDROUTINE_SIG = &_25h2_w11_KiBalanceSetManagerDeferredRoutine_SIG;

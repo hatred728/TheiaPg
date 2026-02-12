@@ -1,6 +1,6 @@
 #include "LinkHeader.h"
 
-CONST UCHAR _25h2_w11_HandlerVsrKiExecuteAllDpcs[] =
+CONST UCHAR _25h2_w11_HandlerFltrKiExecuteAllDpcs[] =
 {
   0x4c,0x8d, 0x80, 0x2c, 0x01, 0x00, 0x00, // lea     r8, [rax+12Ch]
   0x4f, 0x8d, 0x04, 0x40,                  // lea     r8, [r8+r8*2]
@@ -15,7 +15,7 @@ CONST UCHAR _25h2_w11_KiExecuteAllDpcs_SIG[] = ///< For hook.
 CONST UCHAR _25h2_w11_KiExecuteAllDpcs_MASK[] = { "xxxxxxxxxxxxxxx" };
 
 
-CONST UCHAR _25h2_w11_HandlerVsrKiRetireDpcList[] =
+CONST UCHAR _25h2_w11_HandlerFltrKiRetireDpcList[] =
 {
   0x48, 0x8b, 0xd9,                         // mov     rbx, rcx
   0x48, 0x89, 0x4d, 0xb0,                   // mov     qword ptr[rbp - 50h], rcx
@@ -32,7 +32,7 @@ CONST UCHAR _25h2_w11_KiRetireDpcList_SIG[] = ///< For hook.
 CONST UCHAR _25h2_w11_KiRetireDpcList_MASK[] = { "xxxxxxxxxxxxx" };
 
 
-CONST UCHAR _25h2_w11_Handler_KiDeliverApc[] =
+CONST UCHAR _25h2_w11_HandlerFltrKiDeliverApc[] =
 {
   0x45, 0x33, 0xdb,                         // xor     r11d, r11d
   0x49, 0x8b, 0xf8,					        // mov     rdi, r8
@@ -53,7 +53,7 @@ CONST UCHAR _25h2_w11_KiDeliverApc_SIG[] = ///< For hook.
 CONST UCHAR _25h2_w11_KiDeliverApc_MASK[] = { "xxxxxxxxxxxxxxxxxxxxxxxxxxxxx" };
 
 
-CONST UCHAR _25h2_w11_HandlerVsrExQueueWorkItem[] =
+CONST UCHAR _25h2_w11_HandlerFltrExQueueWorkItem[] =
 {
   0x48, 0xb8, 0x00, 0x00, 0x00, 0x00,       // mov     rax, 0FFFF800000000000h
   0x00, 0x80, 0xff, 0xff,
@@ -68,7 +68,7 @@ CONST UCHAR _25h2_w11_ExQueueWorkItem_SIG[] = ///< For hook.
 CONST UCHAR _25h2_w11_ExQueueWorkItem_MASK[] = { "xxxxxxxxxxxxx" };
 
 
-CONST UCHAR _25h2_w11_HandlerVsrExAllocatePool2[] =
+CONST UCHAR _25h2_w11_HandlerFltrExAllocatePool2[] =
 {
   0x9d,                                     // popfq
   0x48, 0x83, 0xc4, 0x10,                   // add     rsp, 010h
@@ -79,8 +79,7 @@ CONST UCHAR _25h2_w11_HandlerVsrExAllocatePool2[] =
   0x5f,                                     // pop     rdi
   0x5e,                                     // pop     rsi
   0x5d,                                     // pop     rbp
-  0xc3,                                     // ret
-  0xfc, 0xe5, 0x65, 0xef, 0x1e, 0xe5, 0x33, 0x41 ///< ImmunitySignature: 0x4133e51eef65e5fc (For this handler, epilogue stub (RestoreContext2) is not executed)
+  0xc3                                      // ret
 };
 CONST UCHAR _25h2_w11_ExAllocatePool2_SIG[] = ///< For hook.
 {
@@ -96,8 +95,9 @@ CONST UCHAR _25h2_w11_ExAllocatePool2_SIG[] = ///< For hook.
 CONST UCHAR _25h2_w11_ExAllocatePool2_MASK[] = { "xxxxxxxxxxxx" };
 
 
-CONST UCHAR _25h2_w11_HandlerVsrKiCustomRecurseRoutineX[] =
+CONST UCHAR _25h2_w11_HandlerFltrKiCustomRecurseRoutineX[] =
 {
+  0x9d,                                     // popfq
   0x48, 0x89, 0xc4,                         // mov     rsp,rax
   0xff, 0xe1,                               // jmp     rcx
   0xcc,                                     // int3

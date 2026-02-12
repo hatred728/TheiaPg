@@ -558,7 +558,7 @@ volatile VOID FltrExQueueWorkItem(IN OUT PINPUTCONTEXT_ICH pInputCtx)
 
             for (ULONG32 j = 0UI32; ; ++j)
             {
-                if (((PUCHAR)pSearchSdbpCheckDllRWX)[j] == 0xCC && ((PUCHAR)pSearchSdbpCheckDllRWX)[j + 1] == 0xCC && ((PUCHAR)pSearchSdbpCheckDllRWX)[j + 2] == 0xCC)
+                if (((PUCHAR)pSearchSdbpCheckDllRWX)[j] == 0xcc && ((PUCHAR)pSearchSdbpCheckDllRWX)[j + 1] == 0xcc && ((PUCHAR)pSearchSdbpCheckDllRWX)[j + 2] == 0xcc)
                 {
                     SaveRel32Offset = *(PLONG32)((PUCHAR)pSearchSdbpCheckDllRWX + (j - 4));
 
@@ -747,7 +747,7 @@ volatile VOID FltrExAllocatePool2(IN OUT PINPUTCONTEXT_ICH pInputCtx)
 
             for (ULONG32 j = 0UI32; ; ++j)
             {
-                if (((PUCHAR)pSearchSdbpCheckDllRWX)[j] == 0xCC && ((PUCHAR)pSearchSdbpCheckDllRWX)[j + 1] == 0xCC && ((PUCHAR)pSearchSdbpCheckDllRWX)[j + 2] == 0xCC)
+                if (((PUCHAR)pSearchSdbpCheckDllRWX)[j] == 0xcc && ((PUCHAR)pSearchSdbpCheckDllRWX)[j + 1] == 0xcc && ((PUCHAR)pSearchSdbpCheckDllRWX)[j + 2] == 0xcc)
                 {
                     SaveRel32Offset = *(PLONG32)((PUCHAR)pSearchSdbpCheckDllRWX + (j - 4));
 
@@ -955,7 +955,7 @@ volatile VOID FltrKiCustomRecurseRoutineX(IN OUT PINPUTCONTEXT_ICH pInputCtx)
 
         for (ULONG32 j = 0UI32; ; ++j)
         {
-            if (((PUCHAR)pSearchSdbpCheckDllRWX)[j] == 0xCC && ((PUCHAR)pSearchSdbpCheckDllRWX)[j + 1] == 0xCC && ((PUCHAR)pSearchSdbpCheckDllRWX)[j + 2] == 0xCC)
+            if (((PUCHAR)pSearchSdbpCheckDllRWX)[j] == 0xcc && ((PUCHAR)pSearchSdbpCheckDllRWX)[j + 1] == 0xcc && ((PUCHAR)pSearchSdbpCheckDllRWX)[j + 2] == 0xcc)
             {
                 SaveRel32Offset = *(PLONG32)((PUCHAR)pSearchSdbpCheckDllRWX + (j - 4));
 

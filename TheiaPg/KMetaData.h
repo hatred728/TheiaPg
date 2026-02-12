@@ -2,28 +2,27 @@
 
 #include "LinkHeader.h"
 
-extern CONST UCHAR _25h2_w11_HandlerVsrKiExecuteAllDpcs[15];
+extern CONST UCHAR _25h2_w11_HandlerFltrKiExecuteAllDpcs[15];
 extern CONST UCHAR _25h2_w11_KiExecuteAllDpcs_SIG[];
 extern CONST UCHAR _25h2_w11_KiExecuteAllDpcs_MASK[];
 
-extern CONST UCHAR _25h2_w11_HandlerVsrKiRetireDpcList[13];
+extern CONST UCHAR _25h2_w11_HandlerFltrKiRetireDpcList[13];
 extern CONST UCHAR _25h2_w11_KiRetireDpcList_SIG[];
 extern CONST UCHAR _25h2_w11_KiRetireDpcList_MASK[];
 
-extern CONST UCHAR _25h2_w11_Handler_KiDeliverApc[14];
+extern CONST UCHAR _25h2_w11_HandlerFltrKiDeliverApc[14];
 extern CONST UCHAR _25h2_w11_KiDeliverApc_SIG[];
 extern CONST UCHAR _25h2_w11_KiDeliverApc_MASK[];
 
-extern CONST UCHAR _25h2_w11_HandlerVsrExQueueWorkItem[13];
+extern CONST UCHAR _25h2_w11_HandlerFltrExQueueWorkItem[13];
 extern CONST UCHAR _25h2_w11_ExQueueWorkItem_SIG[];
 extern CONST UCHAR _25h2_w11_ExQueueWorkItem_MASK[];
                                                  
-#define HANDLER_VSR_EXALLOCATEPOOL2_IMMUNITY_SIG 0x4133e51eef65e5fcUI64
-extern CONST UCHAR _25h2_w11_HandlerVsrExAllocatePool2[25];
+extern CONST UCHAR _25h2_w11_HandlerFltrExAllocatePool2[17];
 extern CONST UCHAR _25h2_w11_ExAllocatePool2_SIG[];
 extern CONST UCHAR _25h2_w11_ExAllocatePool2_MASK[];
 
-extern CONST UCHAR _25h2_w11_HandlerVsrKiCustomRecurseRoutineX[8];
+extern CONST UCHAR _25h2_w11_HandlerFltrKiCustomRecurseRoutineX[9];
 extern CONST UCHAR _25h2_w11_KiCustomRecurseRoutineX_SIG[];
 extern CONST UCHAR _25h2_w11_KiCustomRecurseRoutineX_MASK[];
 
